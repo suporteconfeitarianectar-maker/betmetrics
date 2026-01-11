@@ -1,80 +1,106 @@
 import { Layout } from '@/components/layout/Layout';
-import { MatchCard } from '@/components/cards/MatchCard';
-import { StatCard } from '@/components/cards/StatCard';
-import { EVTooltip } from '@/components/ui/EVTooltip';
-import { matches, performanceData } from '@/data/mockData';
-import { TrendingUp, Target, BarChart3, Percent } from 'lucide-react';
+import { UserSummaryCards } from '@/components/cards/UserSummaryCards';
+import { SimpleMatchCard, HomeAdvantageCard } from '@/components/cards/SimpleMatchCard';
+import { Button } from '@/components/ui/button';
+import { matches } from '@/data/mockData';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Sparkles, Home, TrendingUp } from 'lucide-react';
 
 export default function Index() {
-  const positiveMatches = matches.filter((m) => m.evIndicator === 'positive');
+  // Oportunidades com valor positivo
+  const opportunityMatches = matches.filter((m) => m.evIndicator === 'positive');
+  
+  // Top 5 melhores oportunidades (ordenadas por EV)
+  const topValueMatches = [...matches]
+    .filter((m) => m.evIndicator === 'positive')
+    .sort((a, b) => b.ev - a.ev)
+    .slice(0, 5);
+
+  // Mandantes favoritos
+  const homeAdvantageMatches = matches.filter((m) => m.isHomeAdvantage && m.evIndicator === 'positive');
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 space-y-6">
-        {/* Welcome section */}
+      <div className="p-4 md:p-6 space-y-8">
+        {/* Resumo do Usuário */}
         <section>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            Oportunidades de Valor — Hoje
+          <h1 className="text-xl font-bold text-foreground mb-4">
+            Seu resumo
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Análises baseadas em dados, não em palpites.
-          </p>
+          <UserSummaryCards />
         </section>
 
-        {/* Stats overview */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          <StatCard
-            label="ROI Total"
-            value={`${performanceData.roi}%`}
-            trend="up"
-            icon={<TrendingUp className="w-4 h-4" />}
-          />
-          <StatCard
-            label="Análises"
-            value={performanceData.totalAnalyses}
-            icon={<BarChart3 className="w-4 h-4" />}
-          />
-          <StatCard
-            label="EV Médio"
-            value={`${(performanceData.averageEV * 100).toFixed(1)}%`}
-            trend="up"
-            icon={<Target className="w-4 h-4" />}
-          />
-          <StatCard
-            label="Taxa de acerto"
-            value={`${performanceData.winRate}%`}
-            icon={<Percent className="w-4 h-4" />}
-          />
+        {/* Oportunidades do Dia */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Oportunidades do dia
+              </h2>
+            </div>
+            <Link to="/jogos">
+              <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                Ver todas
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {opportunityMatches.slice(0, 3).map((match) => (
+              <SimpleMatchCard key={match.id} match={match} />
+            ))}
+          </div>
+
+          {opportunityMatches.length > 3 && (
+            <p className="text-sm text-muted-foreground mt-3 text-center">
+              +{opportunityMatches.length - 3} oportunidades disponíveis
+            </p>
+          )}
         </section>
 
-        {/* Value opportunities */}
+        {/* Jogos com Melhor Valor */}
         <section>
           <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-success" />
             <h2 className="text-lg font-semibold text-foreground">
-              Oportunidades com valor positivo
+              Jogos com melhor valor hoje
             </h2>
-            <EVTooltip />
           </div>
 
+          <p className="text-sm text-muted-foreground mb-4">
+            Curadoria automática baseada no nosso modelo de análise
+          </p>
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {positiveMatches.map((match) => (
-              <MatchCard key={match.id} match={match} />
+            {topValueMatches.slice(0, 3).map((match) => (
+              <SimpleMatchCard key={match.id} match={match} />
             ))}
           </div>
         </section>
 
-        {/* All matches today */}
-        <section>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Todas as análises de hoje
-          </h2>
+        {/* Mandantes Favoritos */}
+        {homeAdvantageMatches.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Home className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Mandantes favoritos
+              </h2>
+            </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {matches.map((match) => (
-              <MatchCard key={match.id} match={match} />
-            ))}
-          </div>
-        </section>
+            <p className="text-sm text-muted-foreground mb-4">
+              Jogos onde o time da casa tem vantagem estatística
+            </p>
+
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {homeAdvantageMatches.slice(0, 4).map((match) => (
+                <HomeAdvantageCard key={match.id} match={match} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Disclaimer */}
         <section className="text-center py-6 border-t border-border">

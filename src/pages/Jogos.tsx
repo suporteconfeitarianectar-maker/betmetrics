@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { MatchCard } from '@/components/cards/MatchCard';
 import { Button } from '@/components/ui/button';
-import { matches, leagues } from '@/data/mockData';
+import { matches, leagues, markets } from '@/data/mockData';
 import { Filter, SlidersHorizontal } from 'lucide-react';
 import {
   Sheet,
@@ -13,13 +13,19 @@ import {
 } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Jogos() {
-  const [selectedLeague, setSelectedLeague] = useState<string>('all');
+  const [searchParams] = useSearchParams();
+  const initialLeague = searchParams.get('liga') || 'all';
+  
+  const [selectedLeague, setSelectedLeague] = useState<string>(initialLeague);
+  const [selectedMarket, setSelectedMarket] = useState<string>('all');
   const [evFilter, setEvFilter] = useState<string>('all');
 
   const filteredMatches = matches.filter((match) => {
     if (selectedLeague !== 'all' && match.leagueId !== selectedLeague) return false;
+    if (selectedMarket !== 'all' && match.marketId !== selectedMarket) return false;
     if (evFilter === 'positive' && match.evIndicator !== 'positive') return false;
     if (evFilter === 'negative' && match.evIndicator === 'positive') return false;
     return true;
@@ -45,11 +51,12 @@ export default function Jogos() {
                 Filtros
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[50vh]">
+            <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>Filtros</SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-6">
+                {/* Liga Filter */}
                 <div>
                   <Label className="text-sm font-medium mb-3 block">Liga</Label>
                   <RadioGroup value={selectedLeague} onValueChange={setSelectedLeague}>
@@ -68,6 +75,24 @@ export default function Jogos() {
                   </RadioGroup>
                 </div>
 
+                {/* Market Filter */}
+                <div>
+                  <Label className="text-sm font-medium mb-3 block">Mercado</Label>
+                  <RadioGroup value={selectedMarket} onValueChange={setSelectedMarket}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="all" id="market-all" />
+                      <Label htmlFor="market-all">Todos os mercados</Label>
+                    </div>
+                    {markets.map((market) => (
+                      <div key={market.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={market.id} id={`market-${market.id}`} />
+                        <Label htmlFor={`market-${market.id}`}>{market.name}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* EV Filter */}
                 <div>
                   <Label className="text-sm font-medium mb-3 block">Valor esperado</Label>
                   <RadioGroup value={evFilter} onValueChange={setEvFilter}>
@@ -77,11 +102,11 @@ export default function Jogos() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="positive" id="ev-positive" />
-                      <Label htmlFor="ev-positive">Apenas EV positivo</Label>
+                      <Label htmlFor="ev-positive">Apenas oportunidades</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="negative" id="ev-negative" />
-                      <Label htmlFor="ev-negative">EV neutro/negativo</Label>
+                      <Label htmlFor="ev-negative">Neutro/Desfavorável</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -97,6 +122,7 @@ export default function Jogos() {
             <span className="text-sm text-muted-foreground">Filtros:</span>
           </div>
           
+          {/* Liga Filter */}
           <div className="flex gap-2 flex-wrap">
             <Button
               variant={selectedLeague === 'all' ? 'default' : 'outline'}
@@ -105,7 +131,7 @@ export default function Jogos() {
             >
               Todas
             </Button>
-            {leagues.map((league) => (
+            {leagues.slice(0, 6).map((league) => (
               <Button
                 key={league.id}
                 variant={selectedLeague === league.id ? 'default' : 'outline'}
@@ -119,6 +145,7 @@ export default function Jogos() {
 
           <div className="w-px h-6 bg-border" />
 
+          {/* EV Filter */}
           <div className="flex gap-2">
             <Button
               variant={evFilter === 'all' ? 'default' : 'outline'}
@@ -132,7 +159,7 @@ export default function Jogos() {
               size="sm"
               onClick={() => setEvFilter('positive')}
             >
-              EV+
+              Oportunidades
             </Button>
           </div>
         </section>
