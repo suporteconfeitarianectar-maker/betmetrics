@@ -10,9 +10,10 @@ import { TeamForm } from '@/components/analysis/TeamForm';
 import { StatsComparison } from '@/components/analysis/StatsComparison';
 import { HeadToHead } from '@/components/analysis/HeadToHead';
 import { MarketAnalysis } from '@/components/analysis/MarketAnalysis';
+import { CornersAnalysis } from '@/components/analysis/CornersAnalysis';
 import { matches } from '@/data/mockData';
 import { getMatchAnalysis } from '@/data/teamStats';
-import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus, Wallet, Activity, Users, LineChart } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus, Wallet, Activity, Users, LineChart, Flag } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -127,7 +128,7 @@ export default function JogoDetalhe() {
 
         {/* Tabs for analysis */}
         <Tabs defaultValue="form" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="form" className="flex items-center gap-1 text-xs">
               <Activity className="w-3 h-3" />
               <span className="hidden sm:inline">Forma</span>
@@ -139,6 +140,10 @@ export default function JogoDetalhe() {
             <TabsTrigger value="h2h" className="flex items-center gap-1 text-xs">
               <Users className="w-3 h-3" />
               <span className="hidden sm:inline">H2H</span>
+            </TabsTrigger>
+            <TabsTrigger value="corners" className="flex items-center gap-1 text-xs">
+              <Flag className="w-3 h-3" />
+              <span className="hidden sm:inline">Escanteios</span>
             </TabsTrigger>
             <TabsTrigger value="markets" className="flex items-center gap-1 text-xs">
               <LineChart className="w-3 h-3" />
@@ -220,6 +225,18 @@ export default function JogoDetalhe() {
                     }
                   </p>
                 </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Corners Analysis Tab */}
+          <TabsContent value="corners">
+            {analysis && (
+              <div className="card-metric">
+                <CornersAnalysis 
+                  homeTeam={analysis.homeTeam} 
+                  awayTeam={analysis.awayTeam} 
+                />
               </div>
             )}
           </TabsContent>

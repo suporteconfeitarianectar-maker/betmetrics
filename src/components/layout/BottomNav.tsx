@@ -1,12 +1,12 @@
-import { Home, Calendar, Trophy, History, User } from 'lucide-react';
+import { Home, Calendar, Trophy, Target, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { icon: Home, label: 'Home', path: '/' },
   { icon: Calendar, label: 'Jogos', path: '/jogos' },
+  { icon: Target, label: 'Apostas', path: '/apostas' },
   { icon: Trophy, label: 'Ligas', path: '/ligas' },
-  { icon: History, label: 'Histórico', path: '/historico' },
   { icon: User, label: 'Conta', path: '/conta' },
 ];
 

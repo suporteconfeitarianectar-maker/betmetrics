@@ -12,6 +12,7 @@ import Historico from "./pages/Historico";
 import Banca from "./pages/Banca";
 import Conta from "./pages/Conta";
 import JogoDetalhe from "./pages/JogoDetalhe";
+import MinhasApostas from "./pages/MinhasApostas";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,11 @@ const App = () => (
             <Route path="/ligas/:id" element={
               <ProtectedRoute>
                 <Ligas />
+              </ProtectedRoute>
+            } />
+            <Route path="/apostas" element={
+              <ProtectedRoute>
+                <MinhasApostas />
               </ProtectedRoute>
             } />
             <Route path="/historico" element={
