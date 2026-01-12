@@ -1,4 +1,4 @@
-import { TrendingUp, Bell, ChevronDown, Trophy, LogIn } from 'lucide-react';
+import { TrendingUp, ChevronDown, Trophy, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
 import { leagues } from '@/data/mockData';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { NotificationsPanel } from '@/components/notifications/NotificationsPanel';
 
 export function Header() {
   const { user, profile } = useAuth();
@@ -71,10 +72,7 @@ export function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative h-8 w-8">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary rounded-full" />
-          </Button>
+          <NotificationsPanel />
           
           {user ? (
             <Link to="/conta" className="hidden sm:flex items-center gap-2 ml-1">
