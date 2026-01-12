@@ -3,27 +3,45 @@ import { Layout } from '@/components/layout/Layout';
 import { StatCard } from '@/components/cards/StatCard';
 import { BetCard } from '@/components/bets/BetCard';
 import { AddBetModal } from '@/components/bets/AddBetModal';
+import { AddDepositModal } from '@/components/bets/AddDepositModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Wallet, TrendingUp, Calculator, History, Plus, Loader2 } from 'lucide-react';
+import { 
+  Wallet, 
+  TrendingUp, 
+  Calculator, 
+  History, 
+  Plus, 
+  Loader2, 
+  PlusCircle,
+  Banknote
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBets } from '@/hooks/useBets';
+import { useDeposits } from '@/hooks/useDeposits';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Banca() {
   const { user, profile, refreshProfile } = useAuth();
   const { bets, stats, loading, updateBetResult, deleteBet } = useBets();
+  const { deposits, totalDeposits, addDeposit, loading: depositsLoading } = useDeposits();
+  
   const [showAddBet, setShowAddBet] = useState(false);
-  const [bancaInicial, setBancaInicial] = useState(1000);
+  const [showAddDeposit, setShowAddDeposit] = useState(false);
+  const [bancaInicial, setBancaInicial] = useState(0);
   const [stakePercent, setStakePercent] = useState([2]);
   const [saving, setSaving] = useState(false);
+  const [hasSetInitialBankroll, setHasSetInitialBankroll] = useState(false);
 
   useEffect(() => {
     if (profile) {
-      setBancaInicial(profile.initial_bankroll || 1000);
+      setBancaInicial(profile.initial_bankroll || 0);
+      setHasSetInitialBankroll((profile.initial_bankroll || 0) > 0);
     }
   }, [profile]);
 
@@ -33,8 +51,12 @@ export default function Banca() {
     ? ((bancaAtual - profile.initial_bankroll) / profile.initial_bankroll) * 100 
     : 0;
 
-  const handleSaveConfig = async () => {
+  const handleSetInitialBankroll = async () => {
     if (!user) return;
+    if (bancaInicial <= 0) {
+      toast.error('Valor deve ser maior que zero');
+      return;
+    }
     
     setSaving(true);
     
@@ -42,19 +64,33 @@ export default function Banca() {
       .from('profiles')
       .update({ 
         initial_bankroll: bancaInicial,
-        current_bankroll: profile?.initial_bankroll ? profile.current_bankroll : bancaInicial
+        current_bankroll: bancaInicial
       })
       .eq('user_id', user.id);
 
     setSaving(false);
 
     if (error) {
-      toast.error('Erro ao salvar configurações');
+      toast.error('Erro ao definir banca inicial');
       return;
     }
 
-    toast.success('Configurações salvas com sucesso');
+    toast.success('Banca inicial definida com sucesso!');
+    setHasSetInitialBankroll(true);
     await refreshProfile();
+  };
+
+  const handleAddDeposit = async (amount: number, description: string) => {
+    const { error } = await addDeposit(amount, description);
+    
+    if (error) {
+      toast.error('Erro ao adicionar aporte');
+      return { error };
+    }
+
+    toast.success(`Aporte de R$ ${amount.toFixed(2)} adicionado!`);
+    await refreshProfile();
+    return { error: null };
   };
 
   const handleUpdateResult = async (betId: string, result: 'win' | 'loss' | 'void') => {
@@ -63,6 +99,7 @@ export default function Banca() {
       toast.error('Erro ao atualizar aposta');
     } else {
       toast.success(result === 'win' ? 'Green! 🎉' : result === 'loss' ? 'Red 😢' : 'Aposta anulada');
+      await refreshProfile();
     }
   };
 
@@ -72,11 +109,16 @@ export default function Banca() {
       toast.error('Erro ao excluir aposta');
     } else {
       toast.success('Aposta excluída');
+      await refreshProfile();
     }
   };
 
   const pendingBets = bets.filter(b => b.result === 'pending');
   const settledBets = bets.filter(b => b.result !== 'pending');
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
 
   if (!user) {
     return (
@@ -92,11 +134,69 @@ export default function Banca() {
     );
   }
 
+  // Initial bankroll setup screen
+  if (!hasSetInitialBankroll) {
+    return (
+      <Layout>
+        <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-full max-w-md space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">Definir Banca Inicial</h2>
+              <p className="text-muted-foreground">
+                Informe o valor que você tem disponível para apostas na sua casa de apostas.
+              </p>
+            </div>
+
+            <div className="card-metric space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="banca-inicial" className="text-base">Qual é sua banca atual? (R$)</Label>
+                <Input
+                  id="banca-inicial"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ex: 500.00"
+                  value={bancaInicial || ''}
+                  onChange={(e) => setBancaInicial(Number(e.target.value))}
+                  className="text-lg h-12"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este é o valor que você tem depositado na casa de apostas.
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleSetInitialBankroll} 
+                disabled={saving || bancaInicial <= 0} 
+                className="w-full h-12 text-base"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Definir Banca Inicial
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-6">
         {/* Header */}
-        <section className="flex items-center justify-between">
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
               Gestão de Banca
@@ -105,29 +205,41 @@ export default function Banca() {
               Controle sua banca e registre suas apostas
             </p>
           </div>
-          <Button onClick={() => setShowAddBet(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Nova Aposta
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddDeposit(true)} 
+              className="gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Adicionar Dinheiro</span>
+              <span className="sm:hidden">Aporte</span>
+            </Button>
+            <Button onClick={() => setShowAddBet(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nova Aposta</span>
+              <span className="sm:hidden">Aposta</span>
+            </Button>
+          </div>
         </section>
 
         {/* Stats */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <StatCard
             label="Banca Inicial"
-            value={`R$ ${(profile?.initial_bankroll || 0).toLocaleString('pt-BR')}`}
+            value={formatCurrency(profile?.initial_bankroll || 0)}
             icon={<Wallet className="w-4 h-4" />}
           />
           <StatCard
             label="Banca Atual"
-            value={`R$ ${bancaAtual.toLocaleString('pt-BR')}`}
+            value={formatCurrency(bancaAtual)}
             trend={bankrollChange >= 0 ? 'up' : 'down'}
             subValue={bankrollChange !== 0 ? `${bankrollChange >= 0 ? '+' : ''}${bankrollChange.toFixed(1)}%` : undefined}
             icon={<TrendingUp className="w-4 h-4" />}
           />
           <StatCard
             label="Lucro Total"
-            value={`${stats.totalProfit >= 0 ? '+' : ''}R$ ${stats.totalProfit.toFixed(0)}`}
+            value={`${stats.totalProfit >= 0 ? '+' : ''}${formatCurrency(stats.totalProfit)}`}
             trend={stats.totalProfit >= 0 ? 'up' : 'down'}
             icon={<TrendingUp className="w-4 h-4" />}
           />
@@ -139,30 +251,66 @@ export default function Banca() {
           />
         </section>
 
-        {/* Configurações */}
-        <section className="card-metric space-y-6">
+        {/* Deposit History */}
+        {deposits.length > 0 && (
+          <section className="card-metric space-y-4">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Banknote className="w-5 h-5" />
+              Histórico de Aportes ({deposits.length})
+            </h3>
+            
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {deposits.slice(0, 5).map((deposit) => (
+                <div 
+                  key={deposit.id} 
+                  className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                      <PlusCircle className="w-4 h-4 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{deposit.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(deposit.created_at), "dd 'de' MMM, HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-semibold text-success">
+                    +{formatCurrency(deposit.amount)}
+                  </span>
+                </div>
+              ))}
+              
+              {deposits.length > 5 && (
+                <p className="text-center text-xs text-muted-foreground pt-2">
+                  +{deposits.length - 5} aportes anteriores
+                </p>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de aportes</span>
+                <span className="font-semibold text-foreground">{formatCurrency(totalDeposits)}</span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Stake Configuration */}
+        <section className="card-metric space-y-4">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
             <Calculator className="w-5 h-5" />
-            Configurações de Stake
+            Calculadora de Stake
           </h3>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="banca-inicial">Banca Inicial (R$)</Label>
-              <Input
-                id="banca-inicial"
-                type="number"
-                value={bancaInicial}
-                onChange={(e) => setBancaInicial(Number(e.target.value))}
-                className="mt-2"
-              />
-            </div>
-
-            <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Stake padrão</Label>
+                <Label>Stake recomendado</Label>
                 <span className="text-sm font-mono text-primary">
-                  {stakePercent[0]}% = R$ {stakeValue.toFixed(2)}
+                  {stakePercent[0]}% = {formatCurrency(stakeValue)}
                 </span>
               </div>
               <Slider
@@ -174,22 +322,15 @@ export default function Banca() {
                 className="mt-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>1%</span>
-                <span>10%</span>
+                <span>1% (conservador)</span>
+                <span>10% (agressivo)</span>
               </div>
             </div>
           </div>
 
-          <Button onClick={handleSaveConfig} disabled={saving} className="w-full">
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              'Salvar configurações'
-            )}
-          </Button>
+          <p className="text-xs text-muted-foreground">
+            💡 Recomendamos usar entre 1-3% da banca por aposta para uma gestão segura.
+          </p>
         </section>
 
         {/* Apostas Pendentes */}
@@ -252,8 +393,13 @@ export default function Banca() {
         )}
       </div>
 
-      {/* Add Bet Modal */}
+      {/* Modals */}
       <AddBetModal open={showAddBet} onOpenChange={setShowAddBet} />
+      <AddDepositModal 
+        open={showAddDeposit} 
+        onOpenChange={setShowAddDeposit} 
+        onAddDeposit={handleAddDeposit}
+      />
     </Layout>
   );
 }

@@ -2,21 +2,22 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Check, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const plans = [
   {
-    id: 'FREE',
-    name: 'Free',
+    id: 'TRIAL',
+    name: 'Free Trial',
     price: 'Grátis',
-    description: 'Explore a plataforma',
+    description: 'Acesso total por 7 dias',
     features: [
-      'Até 3 análises por dia',
-      'Ligas principais',
-      'Indicadores básicos',
-      'Histórico limitado',
+      'Acesso completo a todas funcionalidades',
+      'Análises ilimitadas',
+      'Todas as ligas disponíveis',
+      'Gestão de banca completa',
+      'Sem compromisso',
     ],
     badge: 'badge-free',
-    current: true,
   },
   {
     id: 'PRO',
@@ -52,6 +53,19 @@ const plans = [
 ];
 
 export default function Conta() {
+  const { profile, isTrialActive, trialDaysLeft } = useAuth();
+  
+  const currentPlan = profile?.plan || 'FREE';
+
+  const getPlanDisplay = () => {
+    if (currentPlan === 'PRO') return { name: 'Pro', badge: 'badge-pro' };
+    if (currentPlan === 'ELITE') return { name: 'Elite', badge: 'badge-elite' };
+    if (isTrialActive) return { name: 'Free Trial', badge: 'badge-free' };
+    return { name: 'Free', badge: 'badge-free' };
+  };
+
+  const planDisplay = getPlanDisplay();
+
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-6">
@@ -68,13 +82,25 @@ export default function Conta() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Seu plano atual</p>
-              <p className="text-xl font-semibold text-foreground mt-1">Free</p>
+              <p className="text-xl font-semibold text-foreground mt-1">{planDisplay.name}</p>
             </div>
-            <span className="badge-plan badge-free">Demo</span>
+            <span className={cn('badge-plan', planDisplay.badge)}>{planDisplay.name}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Você está usando o modo demonstração. Todas as funcionalidades estão disponíveis para teste.
-          </p>
+          {isTrialActive && currentPlan === 'FREE' && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Você está no período de teste gratuito. Restam <span className="font-semibold text-primary">{trialDaysLeft} dias</span> de acesso total.
+            </p>
+          )}
+          {!isTrialActive && currentPlan === 'FREE' && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Seu período de teste expirou. Faça upgrade para continuar usando todas as funcionalidades.
+            </p>
+          )}
+          {(currentPlan === 'PRO' || currentPlan === 'ELITE') && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Você tem acesso completo a todas as funcionalidades do plano {planDisplay.name}.
+            </p>
+          )}
         </section>
 
         {/* Plans */}
@@ -131,11 +157,11 @@ export default function Conta() {
                   </ul>
 
                   <Button
-                    variant={plan.current ? 'outline' : plan.recommended ? 'default' : 'secondary'}
+                    variant={plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) ? 'outline' : plan.recommended ? 'default' : 'secondary'}
                     className="w-full"
-                    disabled={plan.current}
+                    disabled={plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive)}
                   >
-                    {plan.current ? 'Plano atual' : 'Upgrade'}
+                    {plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) ? 'Plano atual' : 'Upgrade'}
                   </Button>
                 </div>
               </div>
