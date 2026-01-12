@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { BetCard } from '@/components/bets/BetCard';
 import { AddBetModal } from '@/components/bets/AddBetModal';
+import { FinancialSummary } from '@/components/bets/FinancialSummary';
 import { useBets } from '@/hooks/useBets';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Clock, Check, X, TrendingUp, Wallet, Target, BarChart3 } from 'lucide-react';
+import { Plus, Clock, Check, X, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 export default function MinhasApostas() {
   const { bets, stats, loading, updateBetResult, deleteBet } = useBets();
@@ -87,47 +87,8 @@ export default function MinhasApostas() {
           </Button>
         </div>
 
-        {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="card-metric p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Total de Apostas</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{stats.totalBets}</p>
-          </div>
-          <div className="card-metric p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-4 h-4 text-success" />
-              <span className="text-xs text-muted-foreground">Taxa de Acerto</span>
-            </div>
-            <p className="text-2xl font-bold text-success">{stats.winRate.toFixed(1)}%</p>
-          </div>
-          <div className="card-metric p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Lucro/Prejuízo</span>
-            </div>
-            <p className={cn(
-              "text-2xl font-bold",
-              stats.totalProfit > 0 ? "text-success" : stats.totalProfit < 0 ? "text-destructive" : "text-foreground"
-            )}>
-              {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
-            </p>
-          </div>
-          <div className="card-metric p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">ROI</span>
-            </div>
-            <p className={cn(
-              "text-2xl font-bold",
-              stats.roi > 0 ? "text-success" : stats.roi < 0 ? "text-destructive" : "text-foreground"
-            )}>
-              {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(1)}%
-            </p>
-          </div>
-        </div>
+        {/* Financial Summary with Filters */}
+        <FinancialSummary bets={bets} />
 
         {/* Quick Stats */}
         <div className="flex gap-4 text-sm">
