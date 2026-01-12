@@ -21,10 +21,11 @@ interface AuthContextType {
   loading: boolean;
   isTrialActive: boolean;
   trialDaysLeft: number;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, cpf?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfileCPF: (cpf: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -117,19 +118,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Math.max(0, diffDays);
   };
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, cpf?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
+          cpf: cpf,
         },
       },
     });
+
+    // If signup successful and we have CPF, update the profile
+    if (!error && data.user && cpf) {
+      // Wait a moment for the trigger to create the profile
+      setTimeout(async () => {
+        await supabase
+          .from('profiles')
+          .update({ cpf, full_name: fullName })
+          .eq('user_id', data.user!.id);
+      }, 500);
+    }
+
+    return { error: error as Error | null };
+  };
+
+  const updateProfileCPF = async (cpf: string) => {
+    if (!user) return { error: new Error('User not authenticated') };
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ cpf })
+      .eq('user_id', user.id);
+
+    if (!error) {
+      await refreshProfile();
+    }
 
     return { error: error as Error | null };
   };
@@ -159,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     refreshProfile,
+    updateProfileCPF,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
