@@ -7,10 +7,8 @@ import { matches } from '@/data/mockData';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Home, TrendingUp, Plus } from 'lucide-react';
 import { AddBetModal } from '@/components/bets/AddBetModal';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
-  const { user } = useAuth();
   const [showAddBet, setShowAddBet] = useState(false);
 
   // Oportunidades com valor positivo
@@ -35,17 +33,15 @@ export default function Index() {
             <h1 className="text-lg md:text-xl font-bold text-card-foreground">
               Seu resumo
             </h1>
-            {user && (
-              <Button
-                size="default"
-                onClick={() => setShowAddBet(true)}
-                className="gap-2 h-10 px-4 text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nova Aposta</span>
-                <span className="sm:hidden">Apostar</span>
-              </Button>
-            )}
+            <Button
+              size="default"
+              onClick={() => setShowAddBet(true)}
+              className="gap-2 h-10 px-4 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nova Aposta</span>
+              <span className="sm:hidden">Apostar</span>
+            </Button>
           </div>
           <DynamicSummaryCards />
         </section>

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Jogos from "./pages/Jogos";
 import Ligas from "./pages/Ligas";
@@ -24,16 +25,57 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Public route - Auth page */}
             <Route path="/auth" element={<Auth />} />
-            <Route path="/jogos" element={<Jogos />} />
-            <Route path="/jogo/:id" element={<JogoDetalhe />} />
-            <Route path="/ligas" element={<Ligas />} />
-            <Route path="/ligas/:id" element={<Ligas />} />
-            <Route path="/historico" element={<Historico />} />
-            <Route path="/banca" element={<Banca />} />
-            <Route path="/conta" element={<Conta />} />
-            <Route path="*" element={<NotFound />} />
+            
+            {/* Protected routes - require authentication */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/jogos" element={
+              <ProtectedRoute>
+                <Jogos />
+              </ProtectedRoute>
+            } />
+            <Route path="/jogo/:id" element={
+              <ProtectedRoute>
+                <JogoDetalhe />
+              </ProtectedRoute>
+            } />
+            <Route path="/ligas" element={
+              <ProtectedRoute>
+                <Ligas />
+              </ProtectedRoute>
+            } />
+            <Route path="/ligas/:id" element={
+              <ProtectedRoute>
+                <Ligas />
+              </ProtectedRoute>
+            } />
+            <Route path="/historico" element={
+              <ProtectedRoute>
+                <Historico />
+              </ProtectedRoute>
+            } />
+            <Route path="/banca" element={
+              <ProtectedRoute>
+                <Banca />
+              </ProtectedRoute>
+            } />
+            <Route path="/conta" element={
+              <ProtectedRoute>
+                <Conta />
+              </ProtectedRoute>
+            } />
+            
+            {/* 404 - Also protected to prevent any unauthenticated access */}
+            <Route path="*" element={
+              <ProtectedRoute>
+                <NotFound />
+              </ProtectedRoute>
+            } />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
