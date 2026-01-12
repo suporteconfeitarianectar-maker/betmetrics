@@ -7,6 +7,7 @@ export interface Deposit {
   user_id: string;
   amount: number;
   description: string;
+  type: 'deposit' | 'withdrawal' | 'initial';
   created_at: string;
 }
 
