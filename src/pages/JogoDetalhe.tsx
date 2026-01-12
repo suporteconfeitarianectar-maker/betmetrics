@@ -6,10 +6,16 @@ import { EVTooltip } from '@/components/ui/EVTooltip';
 import { PlanBadge } from '@/components/ui/PlanBadge';
 import { Button } from '@/components/ui/button';
 import { AddBetModal } from '@/components/bets/AddBetModal';
+import { TeamForm } from '@/components/analysis/TeamForm';
+import { StatsComparison } from '@/components/analysis/StatsComparison';
+import { HeadToHead } from '@/components/analysis/HeadToHead';
+import { MarketAnalysis } from '@/components/analysis/MarketAnalysis';
 import { matches } from '@/data/mockData';
-import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus, Wallet } from 'lucide-react';
+import { getMatchAnalysis } from '@/data/teamStats';
+import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus, Wallet, Activity, Users, LineChart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function JogoDetalhe() {
   const { id } = useParams();
@@ -31,6 +37,8 @@ export default function JogoDetalhe() {
       </Layout>
     );
   }
+
+  const analysis = getMatchAnalysis(match.id, match.homeTeam, match.awayTeam);
 
   const handleAddToBankroll = () => {
     if (!user) {
@@ -81,45 +89,158 @@ export default function JogoDetalhe() {
           </div>
         </section>
 
-        {/* Market info */}
+        {/* Quick EV Summary */}
         <section className="card-metric">
-          <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Mercado Analisado
-          </h2>
-          <p className="text-lg text-foreground">{match.market}</p>
-        </section>
-
-        {/* Probabilities */}
-        <section className="card-metric">
-          <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Probabilidades
-          </h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground mb-2">Probabilidade calculada</p>
-              <p className="text-3xl font-bold font-mono text-foreground">
-                {(match.calculatedProbability * 100).toFixed(0)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Modelo BetMetrics</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="font-semibold text-foreground">Valor Esperado (EV)</h2>
+                <EVTooltip />
+              </div>
+              <p className="text-sm text-muted-foreground">{match.market}</p>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground mb-2">Probabilidade implícita</p>
-              <p className="text-3xl font-bold font-mono text-muted-foreground">
-                {((1 / match.marketOdds) * 100).toFixed(0)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Pela odd do mercado</p>
+            <div className="text-right">
+              <span className={`text-3xl font-bold font-mono ${match.evIndicator === 'positive' ? 'text-success' : match.evIndicator === 'negative' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {match.ev > 0 ? '+' : ''}{(match.ev * 100).toFixed(1)}%
+              </span>
+              <div className="mt-1">
+                <EVIndicator indicator={match.evIndicator} size="sm" />
+              </div>
             </div>
           </div>
+
+          {match.evIndicator === 'positive' && (
+            <div className="mt-4 p-3 bg-success/10 rounded-lg border border-success/20">
+              <p className="text-sm text-success">
+                ✅ <strong>Boa oportunidade!</strong> Os dados indicam que a probabilidade real é maior do que o mercado sugere.
+              </p>
+            </div>
+          )}
+          {match.evIndicator === 'negative' && (
+            <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+              <p className="text-sm text-destructive">
+                ⚠️ <strong>Atenção:</strong> A odd oferecida não compensa o risco estimado pelo modelo.
+              </p>
+            </div>
+          )}
         </section>
 
-        {/* Odds */}
+        {/* Tabs for analysis */}
+        <Tabs defaultValue="form" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="form" className="flex items-center gap-1 text-xs">
+              <Activity className="w-3 h-3" />
+              <span className="hidden sm:inline">Forma</span>
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="flex items-center gap-1 text-xs">
+              <BarChart3 className="w-3 h-3" />
+              <span className="hidden sm:inline">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="h2h" className="flex items-center gap-1 text-xs">
+              <Users className="w-3 h-3" />
+              <span className="hidden sm:inline">H2H</span>
+            </TabsTrigger>
+            <TabsTrigger value="markets" className="flex items-center gap-1 text-xs">
+              <LineChart className="w-3 h-3" />
+              <span className="hidden sm:inline">Mercados</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Team Form Tab */}
+          <TabsContent value="form" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              {analysis && (
+                <>
+                  <div className="card-metric">
+                    <TeamForm stats={analysis.homeTeam} isHome={true} />
+                  </div>
+                  <div className="card-metric">
+                    <TeamForm stats={analysis.awayTeam} isHome={false} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Insight */}
+            {analysis && (
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                <h4 className="font-medium text-foreground mb-2">💡 O que isso significa?</h4>
+                <p className="text-sm text-muted-foreground">
+                  {analysis.homeTeam.form > analysis.awayTeam.form + 10 
+                    ? `${analysis.homeTeam.team} está em melhor momento. Com ${analysis.homeTeam.last10Results.filter(r => r === 'W').length} vitórias nos últimos 10 jogos, joga em casa com confiança.`
+                    : analysis.awayTeam.form > analysis.homeTeam.form + 10
+                    ? `${analysis.awayTeam.team} vem em melhor fase, mesmo jogando fora de casa. Isso pode equilibrar o duelo.`
+                    : `Os dois times estão em momento similar. A vantagem do mando de campo pode ser decisiva.`
+                  }
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Stats Comparison Tab */}
+          <TabsContent value="stats">
+            {analysis && (
+              <div className="card-metric">
+                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Comparação nos últimos 10 jogos
+                </h3>
+                <StatsComparison homeTeam={analysis.homeTeam} awayTeam={analysis.awayTeam} />
+                
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+                  <h4 className="font-medium text-foreground mb-2">💡 Destaques</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• {analysis.homeTeam.team} marca em média {analysis.homeTeam.avgGoalsScored.toFixed(1)} gols por jogo</li>
+                    <li>• {analysis.awayTeam.team} sofreu {analysis.awayTeam.goalsConceded} gols nos últimos 10 jogos</li>
+                    <li>• Ambos os times tiveram BTTS em {Math.round((analysis.homeTeam.bothTeamsScored + analysis.awayTeam.bothTeamsScored) / 2 * 10)}% dos jogos</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Head to Head Tab */}
+          <TabsContent value="h2h">
+            {analysis && (
+              <div className="card-metric">
+                <HeadToHead 
+                  analysis={analysis} 
+                  homeTeam={match.homeTeam} 
+                  awayTeam={match.awayTeam} 
+                />
+
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+                  <h4 className="font-medium text-foreground mb-2">💡 Histórico do confronto</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {analysis.headToHead.homeWins > analysis.headToHead.awayWins
+                      ? `${match.homeTeam} leva vantagem histórica com ${analysis.headToHead.homeWins} vitórias. Os confrontos costumam ter ${analysis.headToHead.avgGoals.toFixed(1)} gols em média.`
+                      : analysis.headToHead.awayWins > analysis.headToHead.homeWins
+                      ? `${match.awayTeam} tem histórico favorável mesmo jogando fora, com ${analysis.headToHead.awayWins} vitórias nos últimos confrontos.`
+                      : `Confronto equilibrado historicamente. O fator casa pode ser decisivo neste duelo.`
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Markets Analysis Tab */}
+          <TabsContent value="markets">
+            {analysis && (
+              <MarketAnalysis 
+                analysis={analysis} 
+                homeTeam={match.homeTeam} 
+                awayTeam={match.awayTeam} 
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Odds comparison */}
         <section className="card-metric">
           <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Odds
+            Odds - {match.market}
           </h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -128,62 +249,29 @@ export default function JogoDetalhe() {
               <p className="text-3xl font-bold font-mono text-foreground">
                 {match.marketOdds.toFixed(2)}
               </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Prob. implícita: {((1 / match.marketOdds) * 100).toFixed(0)}%
+              </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <p className="text-xs text-muted-foreground mb-2">Odd justa</p>
+              <p className="text-xs text-muted-foreground mb-2">Odd justa (modelo)</p>
               <p className="text-3xl font-bold font-mono text-primary">
                 {match.fairOdds.toFixed(2)}
               </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Prob. calculada: {(match.calculatedProbability * 100).toFixed(0)}%
+              </p>
             </div>
           </div>
-        </section>
 
-        {/* EV */}
-        <section className="card-metric">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="font-semibold text-foreground">Valor Esperado (EV)</h2>
-            <EVTooltip />
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-            <EVIndicator indicator={match.evIndicator} size="lg" />
-            <span className={`text-3xl font-bold font-mono ${match.evIndicator === 'positive' ? 'text-success' : match.evIndicator === 'negative' ? 'text-destructive' : 'text-muted-foreground'}`}>
-              {match.ev > 0 ? '+' : ''}{(match.ev * 100).toFixed(1)}%
-            </span>
-          </div>
-
-          {match.evIndicator === 'positive' && (
-            <p className="text-sm text-success mt-3">
-              Dados indicam vantagem: a probabilidade calculada pelo modelo é maior que a probabilidade implícita da odd.
-            </p>
-          )}
-          {match.evIndicator === 'negative' && (
-            <p className="text-sm text-destructive mt-3">
-              Oportunidade desfavorável: a odd oferecida não compensa o risco estimado pelo modelo.
+          {match.marketOdds > match.fairOdds && (
+            <p className="text-sm text-success mt-3 text-center">
+              A odd do mercado está <strong>acima</strong> da odd justa = oportunidade de valor
             </p>
           )}
         </section>
 
-        {/* Context */}
-        <section className="card-metric">
-          <h2 className="font-semibold text-foreground mb-4">Contexto da Análise</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              Forma recente considerada (últimos 5 jogos)
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              Mando de campo favorece {match.homeTeam}
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              Histórico de confrontos diretos analisado
-            </li>
-          </ul>
-        </section>
-
-        {/* Actions */}
+        {/* CTA - Add to bankroll */}
         <section className="space-y-3">
           <Button 
             onClick={handleAddToBankroll} 
@@ -214,7 +302,7 @@ export default function JogoDetalhe() {
         {match.planRequired !== 'FREE' && (
           <section className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
             <p className="text-sm text-foreground">
-              Funcionalidade disponível no plano {match.planRequired} (modo demonstração ativo)
+              Análise completa disponível no plano {match.planRequired}
             </p>
           </section>
         )}
