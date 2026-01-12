@@ -1,14 +1,20 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { EVIndicator } from '@/components/ui/EVIndicator';
 import { EVTooltip } from '@/components/ui/EVTooltip';
 import { PlanBadge } from '@/components/ui/PlanBadge';
 import { Button } from '@/components/ui/button';
+import { AddBetModal } from '@/components/bets/AddBetModal';
 import { matches } from '@/data/mockData';
-import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, TrendingUp, BarChart3, Target, Plus, Wallet } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function JogoDetalhe() {
   const { id } = useParams();
+  const { user, profile } = useAuth();
+  const [showAddBet, setShowAddBet] = useState(false);
   const match = matches.find((m) => m.id === id);
 
   if (!match) {
@@ -25,6 +31,21 @@ export default function JogoDetalhe() {
       </Layout>
     );
   }
+
+  const handleAddToBankroll = () => {
+    if (!user) {
+      toast.error('Faça login para adicionar apostas');
+      return;
+    }
+    setShowAddBet(true);
+  };
+
+  const prefillData = {
+    match_name: `${match.homeTeam} vs ${match.awayTeam}`,
+    league: match.league,
+    bet_type: match.market,
+    odds: match.marketOdds,
+  };
 
   return (
     <Layout>
@@ -163,11 +184,31 @@ export default function JogoDetalhe() {
         </section>
 
         {/* Actions */}
-        <section className="flex flex-col sm:flex-row gap-3">
-          <Button className="flex-1 gap-2">
+        <section className="space-y-3">
+          <Button 
+            onClick={handleAddToBankroll} 
+            className="w-full gap-2"
+            size="lg"
+          >
             <Plus className="w-4 h-4" />
             Adicionar à gestão de banca
           </Button>
+
+          {user && profile && (
+            <p className="text-xs text-center text-muted-foreground">
+              <Wallet className="w-3 h-3 inline mr-1" />
+              Saldo disponível: R$ {(profile.current_bankroll || 0).toFixed(2)}
+            </p>
+          )}
+
+          {!user && (
+            <p className="text-xs text-center text-muted-foreground">
+              <Link to="/auth" className="text-primary hover:underline">
+                Faça login
+              </Link>
+              {' '}para adicionar apostas à sua banca
+            </p>
+          )}
         </section>
 
         {match.planRequired !== 'FREE' && (
@@ -178,6 +219,13 @@ export default function JogoDetalhe() {
           </section>
         )}
       </div>
+
+      {/* Add Bet Modal - Pre-filled with match data */}
+      <AddBetModal 
+        open={showAddBet} 
+        onOpenChange={setShowAddBet}
+        prefillData={prefillData}
+      />
     </Layout>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,12 +24,33 @@ export function AddBetModal({ open, onOpenChange, prefillData }: AddBetModalProp
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    match_name: prefillData?.match_name || '',
-    league: prefillData?.league || '',
-    bet_type: prefillData?.bet_type || '',
-    odds: prefillData?.odds?.toString() || '',
+    match_name: '',
+    league: '',
+    bet_type: '',
+    odds: '',
     stake: '',
   });
+
+  // Update form when prefillData changes or modal opens
+  useEffect(() => {
+    if (open && prefillData) {
+      setFormData({
+        match_name: prefillData.match_name || '',
+        league: prefillData.league || '',
+        bet_type: prefillData.bet_type || '',
+        odds: prefillData.odds?.toString() || '',
+        stake: '',
+      });
+    } else if (!open) {
+      setFormData({
+        match_name: '',
+        league: '',
+        bet_type: '',
+        odds: '',
+        stake: '',
+      });
+    }
+  }, [open, prefillData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
