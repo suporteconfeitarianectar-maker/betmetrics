@@ -39,10 +39,7 @@ interface APIv3Fixture {
     id: number
     date: string
     timestamp: number
-    status: {
-      short: string
-      long: string
-    }
+    status: { short: string; long: string }
   }
   league: {
     id: number
@@ -52,16 +49,8 @@ interface APIv3Fixture {
     round: string
   }
   teams: {
-    home: {
-      id: number
-      name: string
-      logo: string
-    }
-    away: {
-      id: number
-      name: string
-      logo: string
-    }
+    home: { id: number; name: string; logo: string }
+    away: { id: number; name: string; logo: string }
   }
 }
 
@@ -84,15 +73,31 @@ interface TransformedFixture {
     round: string
     priority: number
   }
-  homeTeam: {
-    id: number
-    name: string
-    logo: string
-  }
-  awayTeam: {
-    id: number
-    name: string
-    logo: string
+  homeTeam: { id: number; name: string; logo: string }
+  awayTeam: { id: number; name: string; logo: string }
+}
+
+// Helper to save cache entry
+async function saveCache(
+  supabaseAdmin: any,
+  today: string,
+  fixtures: TransformedFixture[],
+  fixturesByLeague: Record<string, TransformedFixture[]>,
+  apiCallsCount: number
+) {
+  const { error } = await supabaseAdmin
+    .from('fixtures_cache')
+    .upsert({
+      cache_date: today,
+      fixtures,
+      fixtures_by_league: fixturesByLeague,
+      api_calls_count: apiCallsCount,
+    }, { onConflict: 'cache_date' })
+  
+  if (error) {
+    console.error('Failed to save cache:', error)
+  } else {
+    console.log(`Cache saved for ${today} with ${fixtures.length} fixtures`)
   }
 }
 
@@ -112,7 +117,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create client for user auth validation
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -129,32 +133,29 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create service role client for cache operations
+    // Service role client for cache operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0]
-    
-    console.log(`Checking cache for date: ${today}`)
+    console.log(`[${today}] Checking cache...`)
 
-    // Check if we have cached data for today
+    // Check existing cache
     const { data: cacheData, error: cacheError } = await supabaseAdmin
       .from('fixtures_cache')
       .select('*')
       .eq('cache_date', today)
       .single()
 
+    // CACHE HIT - return cached data (blocks multiple API calls)
     if (cacheData && !cacheError) {
-      // Cache hit - return cached data
-      console.log(`Cache HIT for ${today}. API calls today: ${cacheData.api_calls_count}`)
-      
+      console.log(`[${today}] CACHE HIT - API calls today: ${cacheData.api_calls_count}`)
       return new Response(
         JSON.stringify({
-          fixtures: cacheData.fixtures,
-          fixturesByLeague: cacheData.fixtures_by_league,
+          fixtures: cacheData.fixtures || [],
+          fixturesByLeague: cacheData.fixtures_by_league || {},
           date: today,
           fromCache: true,
           apiCallsToday: cacheData.api_calls_count,
@@ -164,150 +165,106 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`Cache MISS for ${today}. Fetching from API...`)
+    // CACHE MISS - Need to call API (only once per day)
+    console.log(`[${today}] CACHE MISS - Calling API...`)
 
-    // Check API key
     const apiKey = Deno.env.get('API_FOOTBALL_KEY')
     if (!apiKey) {
       console.error('API_FOOTBALL_KEY not configured')
+      // Save empty cache to prevent retry loops
+      await saveCache(supabaseAdmin, today, [], {}, 0)
       return new Response(
         JSON.stringify({ 
           error: 'API key not configured',
           fixtures: [],
           fixturesByLeague: {},
           date: today,
-          fromCache: false
+          fromCache: false,
+          message: 'Configuração pendente'
         }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Fetch from API-Football v3
+    // Call API-Football v3
     const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${today}`
-    
-    console.log(`Calling API: ${apiUrl}`)
+    console.log(`[${today}] API URL: ${apiUrl}`)
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'x-apisports-key': apiKey,
-      },
-    })
+    let fixtures: TransformedFixture[] = []
+    let fixturesByLeague: Record<string, TransformedFixture[]> = {}
+    let apiError: string | null = null
 
-    const responseText = await response.text()
-    console.log(`API response status: ${response.status}`)
-
-    if (!response.ok) {
-      console.error(`API error: ${response.status}`)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Falha ao buscar dados da API',
-          fixtures: [],
-          fixturesByLeague: {},
-          date: today,
-          fromCache: false,
-          message: 'Dados do dia já carregados. Atualização disponível no próximo ciclo.'
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    let data: APIv3Response
     try {
-      data = JSON.parse(responseText)
-    } catch (e) {
-      console.error('Failed to parse API response:', e)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to parse API response',
-          fixtures: [],
-          fixturesByLeague: {},
-          date: today,
-          fromCache: false
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'x-apisports-key': apiKey },
+      })
 
-    // Check for API errors (e.g., suspended account, rate limit)
-    if (data.errors && Object.keys(data.errors).length > 0) {
-      console.error('API errors:', data.errors)
-      return new Response(
-        JSON.stringify({ 
-          fixtures: [], 
-          fixturesByLeague: {}, 
-          date: today, 
-          fromCache: false,
-          message: 'Dados do dia já carregados. Atualização disponível no próximo ciclo.',
-          errors: data.errors 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+      const responseText = await response.text()
+      console.log(`[${today}] API status: ${response.status}`)
 
-    // Filter and transform fixtures
-    const fixtures: TransformedFixture[] = data.response
-      .filter((item) => ALLOWED_LEAGUE_IDS.includes(item.league.id))
-      .map((item) => ({
-        id: item.fixture.id,
-        date: item.fixture.date,
-        timestamp: item.fixture.timestamp,
-        status: item.fixture.status.short,
-        league: {
-          id: item.league.id,
-          name: ALLOWED_LEAGUES[item.league.id]?.name || item.league.name,
-          country: ALLOWED_LEAGUES[item.league.id]?.country || item.league.country,
-          logo: item.league.logo || '',
-          round: item.league.round,
-          priority: ALLOWED_LEAGUES[item.league.id]?.priority || 99,
-        },
-        homeTeam: {
-          id: item.teams.home.id,
-          name: item.teams.home.name,
-          logo: item.teams.home.logo || '',
-        },
-        awayTeam: {
-          id: item.teams.away.id,
-          name: item.teams.away.name,
-          logo: item.teams.away.logo || '',
-        },
-      }))
-      .sort((a, b) => {
-        if (a.league.priority !== b.league.priority) {
-          return a.league.priority - b.league.priority
+      if (!response.ok) {
+        apiError = `API error: ${response.status}`
+        console.error(apiError)
+      } else {
+        const data: APIv3Response = JSON.parse(responseText)
+        
+        // Check for API errors
+        if (data.errors && Object.keys(data.errors).length > 0) {
+          apiError = JSON.stringify(data.errors)
+          console.error(`[${today}] API errors:`, data.errors)
+        } else {
+          // Transform fixtures
+          fixtures = data.response
+            .filter((item) => ALLOWED_LEAGUE_IDS.includes(item.league.id))
+            .map((item) => ({
+              id: item.fixture.id,
+              date: item.fixture.date,
+              timestamp: item.fixture.timestamp,
+              status: item.fixture.status.short,
+              league: {
+                id: item.league.id,
+                name: ALLOWED_LEAGUES[item.league.id]?.name || item.league.name,
+                country: ALLOWED_LEAGUES[item.league.id]?.country || item.league.country,
+                logo: item.league.logo || '',
+                round: item.league.round,
+                priority: ALLOWED_LEAGUES[item.league.id]?.priority || 99,
+              },
+              homeTeam: {
+                id: item.teams.home.id,
+                name: item.teams.home.name,
+                logo: item.teams.home.logo || '',
+              },
+              awayTeam: {
+                id: item.teams.away.id,
+                name: item.teams.away.name,
+                logo: item.teams.away.logo || '',
+              },
+            }))
+            .sort((a, b) => {
+              if (a.league.priority !== b.league.priority) {
+                return a.league.priority - b.league.priority
+              }
+              return a.timestamp - b.timestamp
+            })
+
+          // Group by league
+          fixtures.forEach((fixture) => {
+            const key = `${fixture.league.id}-${fixture.league.name}`
+            if (!fixturesByLeague[key]) fixturesByLeague[key] = []
+            fixturesByLeague[key].push(fixture)
+          })
+
+          console.log(`[${today}] Filtered: ${fixtures.length} of ${data.response.length}`)
         }
-        return a.timestamp - b.timestamp
-      })
-
-    // Group fixtures by league
-    const fixturesByLeague: Record<string, TransformedFixture[]> = {}
-    fixtures.forEach((fixture) => {
-      const leagueKey = `${fixture.league.id}-${fixture.league.name}`
-      if (!fixturesByLeague[leagueKey]) {
-        fixturesByLeague[leagueKey] = []
       }
-      fixturesByLeague[leagueKey].push(fixture)
-    })
-
-    console.log(`Total from API: ${data.response.length}, Filtered: ${fixtures.length}`)
-
-    // Save to cache
-    const { error: upsertError } = await supabaseAdmin
-      .from('fixtures_cache')
-      .upsert({
-        cache_date: today,
-        fixtures: fixtures,
-        fixtures_by_league: fixturesByLeague,
-        api_calls_count: 1
-      }, {
-        onConflict: 'cache_date'
-      })
-
-    if (upsertError) {
-      console.error('Failed to save cache:', upsertError)
-    } else {
-      console.log(`Cache saved for ${today}`)
+    } catch (e) {
+      apiError = `Fetch error: ${e}`
+      console.error(apiError)
     }
+
+    // ALWAYS save cache after API attempt (prevents multiple calls)
+    await saveCache(supabaseAdmin, today, fixtures, fixturesByLeague, 1)
 
     return new Response(
       JSON.stringify({ 
@@ -316,7 +273,10 @@ Deno.serve(async (req) => {
         date: today,
         fromCache: false,
         apiCallsToday: 1,
-        message: 'Dados atualizados da API'
+        message: apiError 
+          ? 'Dados do dia já carregados. Atualização disponível no próximo ciclo.'
+          : 'Dados atualizados da API',
+        error: apiError || undefined
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -327,7 +287,7 @@ Deno.serve(async (req) => {
         error: 'Internal server error',
         fixtures: [],
         fixturesByLeague: {},
-        message: 'Dados do dia já carregados. Atualização disponível no próximo ciclo.'
+        message: 'Erro interno. Tente novamente mais tarde.'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
