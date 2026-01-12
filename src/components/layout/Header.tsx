@@ -1,4 +1,4 @@
-import { TrendingUp, Bell, ChevronDown, Trophy } from 'lucide-react';
+import { TrendingUp, Bell, ChevronDown, Trophy, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,27 +8,40 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { leagues } from '@/data/mockData';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Header() {
+  const { user, profile } = useAuth();
+
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (profile?.email) {
+      return profile.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
     <header className="sticky top-0 z-40 glass-effect border-b border-border">
-      <div className="flex items-center justify-between h-16 px-4 md:px-6">
+      <div className="flex items-center justify-between h-14 px-4 md:px-6">
         {/* Mobile Logo */}
         <div className="flex items-center gap-2 md:hidden">
           <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-primary" />
           </div>
-          <span className="font-semibold text-foreground">BetMetrics</span>
+          <span className="font-semibold text-foreground text-sm">BetMetrics</span>
         </div>
 
         {/* Desktop - League Selector */}
         <div className="hidden md:flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Trophy className="w-4 h-4" />
+              <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
+                <Trophy className="w-3.5 h-3.5" />
                 Todas as ligas
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
@@ -51,23 +64,32 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="text-sm text-muted-foreground">
-            Hoje, 11 de janeiro de 2026
+          <div className="text-xs text-muted-foreground">
+            Hoje, {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+          <Button variant="ghost" size="icon" className="relative h-8 w-8">
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary rounded-full" />
           </Button>
           
-          <div className="hidden sm:flex items-center gap-2 ml-2">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-sm font-medium">U</span>
-            </div>
-          </div>
+          {user ? (
+            <Link to="/conta" className="hidden sm:flex items-center gap-2 ml-1">
+              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-xs font-medium text-primary">{getInitials()}</span>
+              </div>
+            </Link>
+          ) : (
+            <Link to="/auth" className="hidden sm:block">
+              <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs">
+                <LogIn className="w-3.5 h-3.5" />
+                Entrar
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>
