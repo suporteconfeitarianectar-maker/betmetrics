@@ -6,11 +6,14 @@ export interface Fixture {
   id: number;
   date: string;
   timestamp: number;
+  status: string;
   league: {
     id: number;
     name: string;
     country: string;
     logo: string;
+    round: string;
+    priority: number;
   };
   homeTeam: {
     id: number;
@@ -24,9 +27,14 @@ export interface Fixture {
   };
 }
 
+export interface FixturesByLeague {
+  [key: string]: Fixture[];
+}
+
 export function useFixtures() {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [fixturesByLeague, setFixturesByLeague] = useState<FixturesByLeague>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +59,9 @@ export function useFixtures() {
       if (data?.fixtures) {
         setFixtures(data.fixtures);
       }
+      if (data?.fixturesByLeague) {
+        setFixturesByLeague(data.fixturesByLeague);
+      }
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('Erro inesperado');
@@ -63,5 +74,5 @@ export function useFixtures() {
     fetchFixtures();
   }, [user]);
 
-  return { fixtures, loading, error, refetch: fetchFixtures };
+  return { fixtures, fixturesByLeague, loading, error, refetch: fetchFixtures };
 }

@@ -5,18 +5,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Allowed league IDs - only show these leagues
+const ALLOWED_LEAGUES: Record<number, { country: string; priority: number }> = {
+  // Brasil
+  71: { country: 'Brasil', priority: 1 },    // Brasileirão Série A
+  73: { country: 'Brasil', priority: 2 },    // Copa do Brasil
+  // Inglaterra
+  39: { country: 'Inglaterra', priority: 3 },  // Premier League
+  40: { country: 'Inglaterra', priority: 4 },  // Championship
+  // Espanha
+  140: { country: 'Espanha', priority: 5 },   // La Liga
+  143: { country: 'Espanha', priority: 6 },   // Copa del Rey
+  // Alemanha
+  78: { country: 'Alemanha', priority: 7 },   // Bundesliga
+  81: { country: 'Alemanha', priority: 8 },   // DFB Pokal
+  // Itália
+  135: { country: 'Itália', priority: 9 },    // Serie A
+  137: { country: 'Itália', priority: 10 },   // Coppa Italia
+  // França
+  61: { country: 'França', priority: 11 },    // Ligue 1
+  66: { country: 'França', priority: 12 },    // Coupe de France
+  // Arábia Saudita
+  307: { country: 'Arábia Saudita', priority: 13 }, // Saudi Pro League
+  308: { country: 'Arábia Saudita', priority: 14 }, // King's Cup
+  // Turquia
+  203: { country: 'Turquia', priority: 15 },  // Süper Lig
+  206: { country: 'Turquia', priority: 16 },  // Turkish Cup
+}
+
+const ALLOWED_LEAGUE_IDS = Object.keys(ALLOWED_LEAGUES).map(Number)
+
 // API-Football v3 response structure
 interface APIv3Fixture {
   fixture: {
     id: number
     date: string
     timestamp: number
+    status: {
+      short: string
+      long: string
+    }
   }
   league: {
     id: number
     name: string
     country: string
     logo: string
+    round: string
   }
   teams: {
     home: {
@@ -36,6 +71,31 @@ interface APIv3Response {
   response: APIv3Fixture[]
   errors: Record<string, string> | string[]
   results: number
+}
+
+interface TransformedFixture {
+  id: number
+  date: string
+  timestamp: number
+  status: string
+  league: {
+    id: number
+    name: string
+    country: string
+    logo: string
+    round: string
+    priority: number
+  }
+  homeTeam: {
+    id: number
+    name: string
+    logo: string
+  }
+  awayTeam: {
+    id: number
+    name: string
+    logo: string
+  }
 }
 
 Deno.serve(async (req) => {
@@ -83,13 +143,11 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split('T')[0]
     
     console.log(`Fetching fixtures for date: ${today}`)
-    console.log(`API Key present: ${!!apiKey}, length: ${apiKey.length}`)
+    console.log(`Filtering for ${ALLOWED_LEAGUE_IDS.length} allowed leagues`)
 
     // API-Football v3 with header authentication
     const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${today}`
     
-    console.log(`Calling API URL: ${apiUrl}`)
-
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -97,25 +155,20 @@ Deno.serve(async (req) => {
       },
     })
 
-    // Log response details for debugging
     const responseText = await response.text()
     console.log(`API-Football v3 response status: ${response.status}`)
-    console.log(`API-Football v3 response body (first 500 chars): ${responseText.substring(0, 500)}`)
 
     if (!response.ok) {
       console.error(`API-Football v3 error: ${response.status} ${response.statusText}`)
-      console.error(`Response body: ${responseText}`)
       return new Response(
         JSON.stringify({ 
           error: 'Failed to fetch fixtures', 
           status: response.status,
-          details: responseText.substring(0, 200)
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Parse the response
     let data: APIv3Response
     try {
       data = JSON.parse(responseText)
@@ -127,42 +180,65 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check for API errors
     if (data.errors && Object.keys(data.errors).length > 0) {
       console.error('API-Football v3 errors:', data.errors)
       return new Response(
-        JSON.stringify({ fixtures: [], date: today, message: 'API returned errors', errors: data.errors }),
+        JSON.stringify({ fixtures: [], fixturesByLeague: {}, date: today, message: 'API returned errors', errors: data.errors }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Transform to our format
-    const fixtures = data.response.map((item) => ({
-      id: item.fixture.id,
-      date: item.fixture.date,
-      timestamp: item.fixture.timestamp,
-      league: {
-        id: item.league.id,
-        name: item.league.name,
-        country: item.league.country,
-        logo: item.league.logo || '',
-      },
-      homeTeam: {
-        id: item.teams.home.id,
-        name: item.teams.home.name,
-        logo: item.teams.home.logo || '',
-      },
-      awayTeam: {
-        id: item.teams.away.id,
-        name: item.teams.away.name,
-        logo: item.teams.away.logo || '',
-      },
-    }))
+    // Filter and transform fixtures
+    const fixtures: TransformedFixture[] = data.response
+      .filter((item) => ALLOWED_LEAGUE_IDS.includes(item.league.id))
+      .map((item) => ({
+        id: item.fixture.id,
+        date: item.fixture.date,
+        timestamp: item.fixture.timestamp,
+        status: item.fixture.status.short,
+        league: {
+          id: item.league.id,
+          name: item.league.name,
+          country: ALLOWED_LEAGUES[item.league.id]?.country || item.league.country,
+          logo: item.league.logo || '',
+          round: item.league.round,
+          priority: ALLOWED_LEAGUES[item.league.id]?.priority || 99,
+        },
+        homeTeam: {
+          id: item.teams.home.id,
+          name: item.teams.home.name,
+          logo: item.teams.home.logo || '',
+        },
+        awayTeam: {
+          id: item.teams.away.id,
+          name: item.teams.away.name,
+          logo: item.teams.away.logo || '',
+        },
+      }))
+      .sort((a, b) => {
+        // Sort by league priority first, then by time
+        if (a.league.priority !== b.league.priority) {
+          return a.league.priority - b.league.priority
+        }
+        return a.timestamp - b.timestamp
+      })
 
-    console.log(`Returning ${fixtures.length} fixtures`)
+    // Group fixtures by league
+    const fixturesByLeague: Record<string, TransformedFixture[]> = {}
+    fixtures.forEach((fixture) => {
+      const leagueKey = `${fixture.league.id}-${fixture.league.name}`
+      if (!fixturesByLeague[leagueKey]) {
+        fixturesByLeague[leagueKey] = []
+      }
+      fixturesByLeague[leagueKey].push(fixture)
+    })
+
+    console.log(`Total fixtures from API: ${data.response.length}`)
+    console.log(`Filtered fixtures (allowed leagues only): ${fixtures.length}`)
+    console.log(`Number of leagues with fixtures: ${Object.keys(fixturesByLeague).length}`)
 
     return new Response(
-      JSON.stringify({ fixtures, date: today }),
+      JSON.stringify({ fixtures, fixturesByLeague, date: today }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

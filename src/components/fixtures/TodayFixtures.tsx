@@ -1,4 +1,4 @@
-import { useFixtures, Fixture } from '@/hooks/useFixtures';
+import { useFixtures, Fixture, FixturesByLeague } from '@/hooks/useFixtures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, RefreshCw, AlertCircle } from 'lucide-react';
@@ -10,40 +10,70 @@ function FixtureCard({ fixture }: { fixture: Fixture }) {
   const matchTime = format(new Date(fixture.date), 'HH:mm', { locale: ptBR });
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-      {/* League info */}
-      <div className="flex-shrink-0 w-8 h-8">
-        {fixture.league.logo ? (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+      {/* Teams */}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <img
-            src={fixture.league.logo}
-            alt={fixture.league.name}
-            className="w-8 h-8 object-contain"
+            src={fixture.homeTeam.logo}
+            alt={fixture.homeTeam.name}
+            className="w-5 h-5 object-contain flex-shrink-0"
             onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><circle cx="12" cy="12" r="10"/></svg>';
             }}
           />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-            ⚽
-          </div>
-        )}
-      </div>
-
-      {/* Match details */}
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-muted-foreground truncate mb-1">
-          {fixture.league.name} • {fixture.league.country}
-        </p>
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <span className="truncate">{fixture.homeTeam.name}</span>
-          <span className="text-muted-foreground">x</span>
-          <span className="truncate">{fixture.awayTeam.name}</span>
+          <span className="text-sm font-medium truncate">{fixture.homeTeam.name}</span>
+        </div>
+        <span className="text-xs text-muted-foreground px-2">vs</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span className="text-sm font-medium truncate text-right">{fixture.awayTeam.name}</span>
+          <img
+            src={fixture.awayTeam.logo}
+            alt={fixture.awayTeam.name}
+            className="w-5 h-5 object-contain flex-shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><circle cx="12" cy="12" r="10"/></svg>';
+            }}
+          />
         </div>
       </div>
 
       {/* Time */}
-      <div className="flex-shrink-0 text-sm font-semibold text-primary">
+      <div className="flex-shrink-0 text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded">
         {matchTime}
+      </div>
+    </div>
+  );
+}
+
+function LeagueSection({ leagueKey, fixtures }: { leagueKey: string; fixtures: Fixture[] }) {
+  if (fixtures.length === 0) return null;
+  
+  const league = fixtures[0].league;
+
+  return (
+    <div className="space-y-2">
+      {/* League header */}
+      <div className="flex items-center gap-2 px-1 pt-2">
+        <img
+          src={league.logo}
+          alt={league.name}
+          className="w-5 h-5 object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">{league.name}</span>
+          <span className="text-xs text-muted-foreground">• {league.country}</span>
+        </div>
+      </div>
+      
+      {/* Fixtures for this league */}
+      <div className="space-y-1">
+        {fixtures.map((fixture) => (
+          <FixtureCard key={fixture.id} fixture={fixture} />
+        ))}
       </div>
     </div>
   );
@@ -51,15 +81,21 @@ function FixtureCard({ fixture }: { fixture: Fixture }) {
 
 function FixturesSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-          <Skeleton className="w-8 h-8 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-4 w-48" />
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Skeleton className="w-5 h-5 rounded" />
+            <Skeleton className="h-4 w-32" />
           </div>
-          <Skeleton className="h-4 w-12" />
+          <div className="space-y-1">
+            {[1, 2].map((j) => (
+              <div key={j} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-6 w-14 rounded" />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
@@ -67,11 +103,16 @@ function FixturesSkeleton() {
 }
 
 export function TodayFixtures() {
-  const { fixtures, loading, error, refetch } = useFixtures();
+  const { fixturesByLeague, fixtures, loading, error, refetch } = useFixtures();
 
-  // Limit to first 20 fixtures for performance
-  const displayedFixtures = fixtures.slice(0, 20);
-  const hasMore = fixtures.length > 20;
+  // Sort leagues by priority (using first fixture's priority)
+  const sortedLeagueKeys = Object.keys(fixturesByLeague).sort((a, b) => {
+    const priorityA = fixturesByLeague[a]?.[0]?.league.priority ?? 99;
+    const priorityB = fixturesByLeague[b]?.[0]?.league.priority ?? 99;
+    return priorityA - priorityB;
+  });
+
+  const totalFixtures = fixtures.length;
 
   return (
     <Card>
@@ -79,6 +120,11 @@ export function TodayFixtures() {
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Calendar className="w-5 h-5 text-primary" />
           Jogos do Dia
+          {totalFixtures > 0 && (
+            <span className="text-xs font-normal text-muted-foreground">
+              ({totalFixtures} jogos)
+            </span>
+          )}
         </CardTitle>
         <Button
           variant="ghost"
@@ -101,21 +147,21 @@ export function TodayFixtures() {
               Tentar novamente
             </Button>
           </div>
-        ) : fixtures.length === 0 ? (
+        ) : sortedLeagueKeys.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
             <Calendar className="w-8 h-8" />
             <p className="text-sm">Nenhum jogo encontrado para hoje</p>
+            <p className="text-xs">Apenas ligas principais são exibidas</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {displayedFixtures.map((fixture) => (
-              <FixtureCard key={fixture.id} fixture={fixture} />
+          <div className="space-y-4">
+            {sortedLeagueKeys.map((leagueKey) => (
+              <LeagueSection
+                key={leagueKey}
+                leagueKey={leagueKey}
+                fixtures={fixturesByLeague[leagueKey]}
+              />
             ))}
-            {hasMore && (
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                +{fixtures.length - 20} jogos adicionais
-              </p>
-            )}
           </div>
         )}
       </CardContent>
