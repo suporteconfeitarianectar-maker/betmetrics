@@ -86,6 +86,36 @@ export type Database = {
         }
         Relationships: []
       }
+      fixtures_cache: {
+        Row: {
+          api_calls_count: number
+          cache_date: string
+          created_at: string
+          fixtures: Json
+          fixtures_by_league: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          api_calls_count?: number
+          cache_date: string
+          created_at?: string
+          fixtures?: Json
+          fixtures_by_league?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          api_calls_count?: number
+          cache_date?: string
+          created_at?: string
+          fixtures?: Json
+          fixtures_by_league?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cpf: string | null

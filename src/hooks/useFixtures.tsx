@@ -37,6 +37,8 @@ export function useFixtures() {
   const [fixturesByLeague, setFixturesByLeague] = useState<FixturesByLeague>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   const fetchFixtures = async () => {
     if (!user) {
@@ -62,6 +64,12 @@ export function useFixtures() {
       if (data?.fixturesByLeague) {
         setFixturesByLeague(data.fixturesByLeague);
       }
+      if (data?.fromCache !== undefined) {
+        setFromCache(data.fromCache);
+      }
+      if (data?.message) {
+        setMessage(data.message);
+      }
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('Erro inesperado');
@@ -74,5 +82,5 @@ export function useFixtures() {
     fetchFixtures();
   }, [user]);
 
-  return { fixtures, fixturesByLeague, loading, error, refetch: fetchFixtures };
+  return { fixtures, fixturesByLeague, loading, error, fromCache, message, refetch: fetchFixtures };
 }
