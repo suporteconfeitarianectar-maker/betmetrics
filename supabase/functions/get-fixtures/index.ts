@@ -81,25 +81,38 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split('T')[0]
     
     console.log(`Fetching fixtures for date: ${today}`)
+    console.log(`API Key present: ${!!apiKey}, length: ${apiKey.length}`)
 
     const response = await fetch(
       `https://v3.football.api-sports.io/fixtures?date=${today}`,
       {
+        method: 'GET',
         headers: {
           'x-apisports-key': apiKey,
         },
       }
     )
 
+    // Log response details for debugging
+    const responseText = await response.text()
+    console.log(`API-Football response status: ${response.status}`)
+    console.log(`API-Football response body: ${responseText.substring(0, 500)}`)
+
     if (!response.ok) {
       console.error(`API-Football error: ${response.status} ${response.statusText}`)
+      console.error(`Response body: ${responseText}`)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch fixtures' }),
+        JSON.stringify({ 
+          error: 'Failed to fetch fixtures', 
+          status: response.status,
+          details: responseText.substring(0, 200)
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const data: APIFootballResponse = await response.json()
+    // Parse the already-read response text
+    const data: APIFootballResponse = JSON.parse(responseText)
 
     if (data.errors && Object.keys(data.errors).length > 0) {
       console.error('API-Football errors:', data.errors)
