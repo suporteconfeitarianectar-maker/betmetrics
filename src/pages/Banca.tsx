@@ -58,15 +58,24 @@ export default function Banca() {
       return;
     }
     
+    // Maximum limit for reasonable bankroll values
+    const MAX_BANKROLL = 1000000;
+    if (bancaInicial > MAX_BANKROLL) {
+      toast.error(`Valor máximo permitido: ${formatCurrency(MAX_BANKROLL)}`);
+      return;
+    }
+    
     setSaving(true);
     
+    // Use deposit system for proper audit trail instead of direct profile update
     const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        initial_bankroll: bancaInicial,
-        current_bankroll: bancaInicial
-      })
-      .eq('user_id', user.id);
+      .from('deposits')
+      .insert({
+        user_id: user.id,
+        amount: bancaInicial,
+        description: 'Banca inicial',
+        type: 'initial'
+      });
 
     setSaving(false);
 
