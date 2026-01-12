@@ -7,6 +7,7 @@ import { matches } from '@/data/mockData';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Home, TrendingUp, Plus } from 'lucide-react';
 import { AddBetModal } from '@/components/bets/AddBetModal';
+import { TodayFixtures } from '@/components/fixtures/TodayFixtures';
 
 export default function Index() {
   const [showAddBet, setShowAddBet] = useState(false);
@@ -44,6 +45,11 @@ export default function Index() {
             </Button>
           </div>
           <DynamicSummaryCards />
+        </section>
+
+        {/* Seção: Jogos do Dia - API-Football */}
+        <section>
+          <TodayFixtures />
         </section>
 
         {/* Seção 2: Oportunidades do Dia - Carousel no mobile (1 card por vez) */}
