@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Profile {
+export interface Profile {
   id: string;
   user_id: string;
   email: string | null;
@@ -12,6 +12,8 @@ interface Profile {
   trial_started_at: string;
   trial_expires_at: string;
   is_trial_expired: boolean;
+  current_bankroll: number;
+  initial_bankroll: number;
 }
 
 interface AuthContextType {

@@ -14,13 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      bets: {
+        Row: {
+          bet_type: string
+          created_at: string
+          id: string
+          league: string | null
+          match_name: string
+          odds: number
+          potential_return: number | null
+          profit_loss: number | null
+          result: string | null
+          settled_at: string | null
+          stake: number
+          user_id: string
+        }
+        Insert: {
+          bet_type: string
+          created_at?: string
+          id?: string
+          league?: string | null
+          match_name: string
+          odds: number
+          potential_return?: number | null
+          profit_loss?: number | null
+          result?: string | null
+          settled_at?: string | null
+          stake: number
+          user_id: string
+        }
+        Update: {
+          bet_type?: string
+          created_at?: string
+          id?: string
+          league?: string | null
+          match_name?: string
+          odds?: number
+          potential_return?: number | null
+          profit_loss?: number | null
+          result?: string | null
+          settled_at?: string | null
+          stake?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cpf: string | null
           created_at: string
+          current_bankroll: number | null
           email: string | null
           full_name: string | null
           id: string
+          initial_bankroll: number | null
           is_trial_expired: boolean
           plan: string
           trial_expires_at: string
@@ -31,9 +78,11 @@ export type Database = {
         Insert: {
           cpf?: string | null
           created_at?: string
+          current_bankroll?: number | null
           email?: string | null
           full_name?: string | null
           id?: string
+          initial_bankroll?: number | null
           is_trial_expired?: boolean
           plan?: string
           trial_expires_at?: string
@@ -44,9 +93,11 @@ export type Database = {
         Update: {
           cpf?: string | null
           created_at?: string
+          current_bankroll?: number | null
           email?: string | null
           full_name?: string | null
           id?: string
+          initial_bankroll?: number | null
           is_trial_expired?: boolean
           plan?: string
           trial_expires_at?: string
