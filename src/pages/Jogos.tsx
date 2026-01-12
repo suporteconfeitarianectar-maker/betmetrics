@@ -11,7 +11,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetClose,
 } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { useSearchParams } from 'react-router-dom';
@@ -94,7 +93,7 @@ export default function Jogos() {
     }
   };
 
-  // Filter option component for mobile
+  // Filter option component for mobile - touch friendly
   const FilterOption = ({ 
     selected, 
     onClick, 
@@ -106,25 +105,25 @@ export default function Jogos() {
   }) => (
     <button
       onClick={onClick}
-      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between ${
+      className={`w-full text-left px-4 py-3.5 rounded-xl text-sm transition-colors flex items-center justify-between ${
         selected 
           ? 'bg-primary/15 text-primary border border-primary/30' 
           : 'bg-muted/30 text-card-foreground hover:bg-muted/50 border border-transparent'
       }`}
     >
-      <span>{children}</span>
-      {selected && <Check className="w-4 h-4" />}
+      <span className="text-base">{children}</span>
+      {selected && <Check className="w-5 h-5" />}
     </button>
   );
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
         <section className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-card-foreground">Jogos</h1>
-            <p className="text-muted-foreground text-xs">
+            <h1 className="text-xl md:text-2xl font-bold text-card-foreground">Jogos</h1>
+            <p className="text-muted-foreground text-sm mt-1">
               {filteredMatches.length} jogos encontrados
             </p>
           </div>
@@ -132,27 +131,27 @@ export default function Jogos() {
           {/* Mobile Filter Button */}
           <Sheet open={isSheetOpen} onOpenChange={handleSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="md:hidden gap-2 relative">
-                <SlidersHorizontal className="w-4 h-4" />
+              <Button variant="outline" size="lg" className="md:hidden gap-2 relative h-12 px-4">
+                <SlidersHorizontal className="w-5 h-5" />
                 Filtros
                 {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-primary-foreground text-[10px] font-medium rounded-full flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-primary-foreground text-xs font-medium rounded-full flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] flex flex-col p-0">
+            <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0 rounded-t-2xl">
               <SheetHeader className="p-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <SheetTitle className="text-base">Filtros</SheetTitle>
+                  <SheetTitle className="text-lg font-bold">Filtros</SheetTitle>
                   <button 
                     onClick={() => {
                       setTempLeague('all');
                       setTempMarket('all');
                       setTempEvFilter('all');
                     }}
-                    className="text-xs text-primary"
+                    className="text-sm text-primary font-medium"
                   >
                     Limpar tudo
                   </button>
@@ -160,20 +159,20 @@ export default function Jogos() {
               </SheetHeader>
               
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Liga Filter */}
                   <div>
-                    <Label className="text-sm font-medium mb-3 block text-card-foreground">
+                    <Label className="text-base font-semibold mb-4 block text-card-foreground">
                       Liga
                     </Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       <FilterOption 
                         selected={tempLeague === 'all'} 
                         onClick={() => setTempLeague('all')}
                       >
-                        Todas
+                        Todas as ligas
                       </FilterOption>
-                      {leagues.map((league) => (
+                      {leagues.slice(0, 8).map((league) => (
                         <FilterOption
                           key={league.id}
                           selected={tempLeague === league.id}
@@ -187,17 +186,17 @@ export default function Jogos() {
 
                   {/* Market Filter */}
                   <div>
-                    <Label className="text-sm font-medium mb-3 block text-card-foreground">
+                    <Label className="text-base font-semibold mb-4 block text-card-foreground">
                       Mercado
                     </Label>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-2">
                       <FilterOption 
                         selected={tempMarket === 'all'} 
                         onClick={() => setTempMarket('all')}
                       >
                         Todos os mercados
                       </FilterOption>
-                      {markets.map((market) => (
+                      {markets.slice(0, 5).map((market) => (
                         <FilterOption
                           key={market.id}
                           selected={tempMarket === market.id}
@@ -211,44 +210,44 @@ export default function Jogos() {
 
                   {/* EV Filter */}
                   <div>
-                    <Label className="text-sm font-medium mb-3 block text-card-foreground">
+                    <Label className="text-base font-semibold mb-4 block text-card-foreground">
                       Tipo de oportunidade
                     </Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       <FilterOption 
                         selected={tempEvFilter === 'all'} 
                         onClick={() => setTempEvFilter('all')}
                       >
-                        Todos
+                        Todas
                       </FilterOption>
                       <FilterOption 
                         selected={tempEvFilter === 'positive'} 
                         onClick={() => setTempEvFilter('positive')}
                       >
-                        ✓ Oportunidades
+                        ✓ Oportunidades favoráveis
                       </FilterOption>
                       <FilterOption 
                         selected={tempEvFilter === 'neutral'} 
                         onClick={() => setTempEvFilter('neutral')}
                       >
-                        Neutro
+                        Neutras
                       </FilterOption>
                       <FilterOption 
                         selected={tempEvFilter === 'negative'} 
                         onClick={() => setTempEvFilter('negative')}
                       >
-                        Desfavorável
+                        Desfavoráveis
                       </FilterOption>
                     </div>
                   </div>
                 </div>
               </ScrollArea>
 
-              {/* Apply Button */}
-              <div className="p-4 border-t border-border bg-card">
+              {/* Apply Button - touch friendly */}
+              <div className="p-4 border-t border-border bg-card safe-area-bottom">
                 <Button 
                   onClick={applyMobileFilters} 
-                  className="w-full"
+                  className="w-full h-14 text-base font-semibold"
                   size="lg"
                 >
                   Aplicar filtros
@@ -262,26 +261,26 @@ export default function Jogos() {
         {activeFiltersCount > 0 && (
           <div className="md:hidden flex flex-wrap gap-2">
             {selectedLeague !== 'all' && (
-              <Badge variant="secondary" className="gap-1 text-xs">
+              <Badge variant="secondary" className="gap-2 text-sm py-2 px-3">
                 {getLeagueName(selectedLeague)}
-                <button onClick={() => setSelectedLeague('all')}>
-                  <X className="w-3 h-3" />
+                <button onClick={() => setSelectedLeague('all')} className="ml-1">
+                  <X className="w-4 h-4" />
                 </button>
               </Badge>
             )}
             {selectedMarket !== 'all' && (
-              <Badge variant="secondary" className="gap-1 text-xs">
+              <Badge variant="secondary" className="gap-2 text-sm py-2 px-3">
                 {getMarketName(selectedMarket)}
-                <button onClick={() => setSelectedMarket('all')}>
-                  <X className="w-3 h-3" />
+                <button onClick={() => setSelectedMarket('all')} className="ml-1">
+                  <X className="w-4 h-4" />
                 </button>
               </Badge>
             )}
             {evFilter !== 'all' && (
-              <Badge variant="secondary" className="gap-1 text-xs">
+              <Badge variant="secondary" className="gap-2 text-sm py-2 px-3">
                 {getEvName(evFilter)}
-                <button onClick={() => setEvFilter('all')}>
-                  <X className="w-3 h-3" />
+                <button onClick={() => setEvFilter('all')} className="ml-1">
+                  <X className="w-4 h-4" />
                 </button>
               </Badge>
             )}
@@ -293,15 +292,13 @@ export default function Jogos() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Liga:</span>
+              <span className="text-sm text-muted-foreground">Liga:</span>
             </div>
             
-            {/* Liga Filter */}
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant={selectedLeague === 'all' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-xs"
                 onClick={() => setSelectedLeague('all')}
               >
                 Todas
@@ -311,7 +308,6 @@ export default function Jogos() {
                   key={league.id}
                   variant={selectedLeague === league.id ? 'default' : 'outline'}
                   size="sm"
-                  className="h-7 text-xs"
                   onClick={() => setSelectedLeague(league.id)}
                 >
                   {league.flag} {league.name}
@@ -321,16 +317,12 @@ export default function Jogos() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground ml-6">Mercado:</span>
-            </div>
+            <span className="text-sm text-muted-foreground ml-6">Mercado:</span>
             
-            {/* Market Filter */}
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant={selectedMarket === 'all' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-xs"
                 onClick={() => setSelectedMarket('all')}
               >
                 Todos
@@ -340,7 +332,6 @@ export default function Jogos() {
                   key={market.id}
                   variant={selectedMarket === market.id ? 'default' : 'outline'}
                   size="sm"
-                  className="h-7 text-xs"
                   onClick={() => setSelectedMarket(market.id)}
                 >
                   {market.name}
@@ -350,12 +341,10 @@ export default function Jogos() {
 
             <div className="w-px h-5 bg-border" />
 
-            {/* EV Filter */}
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <Button
                 variant={evFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-xs"
                 onClick={() => setEvFilter('all')}
               >
                 Todos
@@ -363,7 +352,6 @@ export default function Jogos() {
               <Button
                 variant={evFilter === 'positive' ? 'default' : 'outline'}
                 size="sm"
-                className="h-7 text-xs"
                 onClick={() => setEvFilter('positive')}
               >
                 ✓ Oportunidades
@@ -376,7 +364,7 @@ export default function Jogos() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-muted-foreground"
+                  className="text-muted-foreground"
                   onClick={resetFilters}
                 >
                   Limpar filtros
@@ -386,20 +374,20 @@ export default function Jogos() {
           </div>
         </section>
 
-        {/* Matches Grid */}
+        {/* Matches - Single column on mobile */}
         <section>
           {filteredMatches.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-4 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-4 md:space-y-0">
               {filteredMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-card/50 rounded-lg border border-border/50">
-              <p className="text-muted-foreground text-sm mb-3">
+            <div className="text-center py-12 bg-card/50 rounded-xl border border-border/50">
+              <p className="text-muted-foreground text-base mb-4">
                 Nenhum jogo encontrado com os filtros selecionados.
               </p>
-              <Button variant="outline" size="sm" onClick={resetFilters}>
+              <Button variant="outline" size="lg" onClick={resetFilters}>
                 Limpar filtros
               </Button>
             </div>

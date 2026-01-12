@@ -32,7 +32,8 @@ export function Layout({ children }: LayoutProps) {
       <div className="md:ml-64">
         <TrialBanner />
         <Header />
-        <main className="pb-20 md:pb-6">
+        {/* Mobile: padding bottom for nav bar + safe area */}
+        <main className="pb-24 md:pb-6">
           {children}
         </main>
       </div>

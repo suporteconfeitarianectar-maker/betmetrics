@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, Clock, ChevronRight } from 'lucide-react';
 import { Match } from '@/types';
 import { EVIndicator } from '@/components/ui/EVIndicator';
 import { PlanBadge } from '@/components/ui/PlanBadge';
@@ -11,67 +11,71 @@ interface MatchCardProps {
 
 export function MatchCard({ match }: MatchCardProps) {
   return (
-    <div className="card-metric animate-slide-up">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-            {match.league}
-          </span>
-          {match.planRequired !== 'FREE' && (
-            <PlanBadge plan={match.planRequired} />
-          )}
+    <Link to={`/jogo/${match.id}`} className="block">
+      <div className="card-metric animate-slide-up">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground bg-muted px-2.5 py-1 rounded">
+              {match.league}
+            </span>
+            {match.planRequired !== 'FREE' && (
+              <PlanBadge plan={match.planRequired} />
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            {match.time}
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          {match.time}
-        </div>
-      </div>
 
-      <div className="mb-4">
-        <h3 className="font-semibold text-foreground text-lg">
-          {match.homeTeam} vs {match.awayTeam}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Mercado: {match.market}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="text-center p-2 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground mb-1">Prob. calculada</p>
-          <p className="font-mono font-semibold text-foreground">
-            {(match.calculatedProbability * 100).toFixed(0)}%
+        {/* Teams */}
+        <div className="mb-4">
+          <h3 className="font-semibold text-foreground text-lg md:text-xl leading-tight">
+            {match.homeTeam} vs {match.awayTeam}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Mercado: {match.market}
           </p>
         </div>
-        <div className="text-center p-2 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground mb-1">Odd mercado</p>
-          <p className="font-mono font-semibold text-foreground">
-            {match.marketOdds.toFixed(2)}
-          </p>
-        </div>
-        <div className="text-center p-2 rounded-lg bg-muted/50">
-          <p className="text-xs text-muted-foreground mb-1">Odd justa</p>
-          <p className="font-mono font-semibold text-foreground">
-            {match.fairOdds.toFixed(2)}
-          </p>
-        </div>
-      </div>
 
-      <div className="flex items-center justify-between">
-        <EVIndicator indicator={match.evIndicator} value={match.ev} showValue />
-        <Link to={`/jogo/${match.id}`}>
-          <Button variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
+        {/* Stats - Mobile optimized */}
+        <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground mb-1">Prob.</p>
+            <p className="font-mono font-semibold text-foreground text-base md:text-lg">
+              {(match.calculatedProbability * 100).toFixed(0)}%
+            </p>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground mb-1">Odd</p>
+            <p className="font-mono font-semibold text-foreground text-base md:text-lg">
+              {match.marketOdds.toFixed(2)}
+            </p>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground mb-1">Justa</p>
+            <p className="font-mono font-semibold text-primary text-base md:text-lg">
+              {match.fairOdds.toFixed(2)}
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom row */}
+        <div className="flex items-center justify-between">
+          <EVIndicator indicator={match.evIndicator} value={match.ev} showValue />
+          <div className="flex items-center gap-1 text-primary text-sm font-medium">
             Ver análise
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </div>
+            <ChevronRight className="w-5 h-5" />
+          </div>
+        </div>
 
-      {match.planRequired !== 'FREE' && (
-        <p className="mt-3 text-xs text-muted-foreground text-center border-t border-border pt-3">
-          Funcionalidade disponível no plano {match.planRequired} (modo demonstração ativo)
-        </p>
-      )}
-    </div>
+        {match.planRequired !== 'FREE' && (
+          <p className="mt-4 text-sm text-muted-foreground text-center border-t border-border pt-4">
+            Disponível no plano {match.planRequired}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
