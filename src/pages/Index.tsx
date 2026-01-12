@@ -1,12 +1,18 @@
+import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { UserSummaryCards } from '@/components/cards/UserSummaryCards';
+import { DynamicSummaryCards } from '@/components/cards/DynamicSummaryCards';
 import { SimpleMatchCard, HomeAdvantageCard, CompactMatchCard } from '@/components/cards/SimpleMatchCard';
 import { Button } from '@/components/ui/button';
 import { matches } from '@/data/mockData';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Home, TrendingUp } from 'lucide-react';
+import { ArrowRight, Sparkles, Home, TrendingUp, Plus } from 'lucide-react';
+import { AddBetModal } from '@/components/bets/AddBetModal';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
+  const { user } = useAuth();
+  const [showAddBet, setShowAddBet] = useState(false);
+
   // Oportunidades com valor positivo
   const opportunityMatches = matches.filter((m) => m.evIndicator === 'positive');
   
@@ -24,10 +30,22 @@ export default function Index() {
       <div className="p-4 md:p-6 space-y-6">
         {/* Resumo do Usuário */}
         <section>
-          <h1 className="text-base font-semibold text-card-foreground mb-3">
-            Seu resumo
-          </h1>
-          <UserSummaryCards />
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-base font-semibold text-card-foreground">
+              Seu resumo
+            </h1>
+            {user && (
+              <Button
+                size="sm"
+                onClick={() => setShowAddBet(true)}
+                className="gap-1 h-8"
+              >
+                <Plus className="w-4 h-4" />
+                Nova Aposta
+              </Button>
+            )}
+          </div>
+          <DynamicSummaryCards />
         </section>
 
         {/* Oportunidades do Dia - Horizontal scroll on mobile */}
@@ -147,6 +165,9 @@ export default function Index() {
           </p>
         </section>
       </div>
+
+      {/* Add Bet Modal */}
+      <AddBetModal open={showAddBet} onOpenChange={setShowAddBet} />
     </Layout>
   );
 }
