@@ -153,29 +153,16 @@ export function useBets() {
   const deleteBet = async (betId: string) => {
     if (!user) return { error: new Error('User not authenticated') };
 
-    // Get the bet first to return stake if pending
-    const bet = bets.find(b => b.id === betId);
-    
+    // Database trigger (refund_stake_on_bet_delete) handles refund atomically
     const { error } = await supabase
       .from('bets')
       .delete()
       .eq('id', betId)
       .eq('user_id', user.id);
 
-    if (!error && bet?.result === 'pending') {
-      // Return stake to bankroll
-      await supabase
-        .from('profiles')
-        .update({ 
-          current_bankroll: (profile?.current_bankroll || 0) + bet.stake 
-        })
-        .eq('user_id', user.id);
-      
-      await refreshProfile();
-    }
-
     if (!error) {
       await fetchBets();
+      await refreshProfile();
     }
 
     return { error: error as Error | null };
