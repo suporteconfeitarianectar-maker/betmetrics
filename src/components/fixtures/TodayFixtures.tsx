@@ -1,7 +1,7 @@
 import { useFixtures, Fixture, FixturesByLeague } from '@/hooks/useFixtures';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, RefreshCw, AlertCircle } from 'lucide-react';
+import { Calendar, RefreshCw, AlertCircle, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -103,7 +103,7 @@ function FixturesSkeleton() {
 }
 
 export function TodayFixtures() {
-  const { fixturesByLeague, fixtures, loading, error, refetch } = useFixtures();
+  const { fixturesByLeague, fixtures, loading, error, fromCache, message, refetch } = useFixtures();
 
   // Sort leagues by priority (using first fixture's priority)
   const sortedLeagueKeys = Object.keys(fixturesByLeague).sort((a, b) => {
@@ -117,21 +117,30 @@ export function TodayFixtures() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          Jogos do Dia
-          {totalFixtures > 0 && (
-            <span className="text-xs font-normal text-muted-foreground">
-              ({totalFixtures} jogos)
+        <div className="flex flex-col gap-1">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            Jogos do Dia
+            {totalFixtures > 0 && (
+              <span className="text-xs font-normal text-muted-foreground">
+                ({totalFixtures} jogos)
+              </span>
+            )}
+          </CardTitle>
+          {fromCache && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Database className="w-3 h-3" />
+              Dados em cache
             </span>
           )}
-        </CardTitle>
+        </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={refetch}
           disabled={loading}
           className="h-8 w-8 p-0"
+          title={fromCache ? "Dados já atualizados hoje" : "Atualizar"}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
@@ -150,8 +159,10 @@ export function TodayFixtures() {
         ) : sortedLeagueKeys.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
             <Calendar className="w-8 h-8" />
-            <p className="text-sm">Nenhum jogo encontrado para hoje</p>
-            <p className="text-xs">Apenas ligas principais são exibidas</p>
+            <p className="text-sm text-center">Hoje não há jogos nas ligas monitoradas</p>
+            <p className="text-xs text-center max-w-xs">
+              Brasil, Inglaterra, Espanha, Alemanha, Itália, França, Turquia e Arábia Saudita
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
