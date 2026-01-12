@@ -1,6 +1,8 @@
-import { Home, Calendar, Trophy, History, User, TrendingUp, Wallet } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Home, Calendar, Trophy, History, User, TrendingUp, Wallet, LogOut, LogIn } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { icon: Home, label: 'Dashboard', path: '/' },
@@ -13,6 +15,29 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut, trialDaysLeft, isTrialActive } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getPlanDisplay = () => {
+    if (!profile) return { plan: 'FREE', badge: 'Demo' };
+    
+    if (profile.plan !== 'FREE') {
+      return { plan: profile.plan, badge: profile.plan };
+    }
+    
+    if (!isTrialActive) {
+      return { plan: 'FREE', badge: 'Expirado' };
+    }
+    
+    return { plan: 'FREE', badge: `${trialDaysLeft}d restantes` };
+  };
+
+  const planDisplay = getPlanDisplay();
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-sidebar border-r border-sidebar-border">
@@ -53,19 +78,44 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
-        <div className="p-4 rounded-lg bg-sidebar-accent">
-          <p className="text-xs text-muted-foreground mb-2">Plano atual</p>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">FREE</span>
-            <span className="badge-plan badge-free">Demo</span>
+        {user ? (
+          <div className="space-y-3">
+            <div className="p-3 rounded-lg bg-sidebar-accent">
+              <p className="text-[10px] text-muted-foreground mb-1">Plano atual</p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">{planDisplay.plan}</span>
+                <span className={cn(
+                  "badge-plan",
+                  profile?.plan === 'FREE' && !isTrialActive ? 'badge-free text-destructive' : 'badge-free'
+                )}>
+                  {planDisplay.badge}
+                </span>
+              </div>
+              <Link
+                to="/conta"
+                className="mt-2 block w-full text-center text-xs text-primary hover:underline"
+              >
+                Ver planos
+              </Link>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-start text-muted-foreground"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
           </div>
-          <Link
-            to="/conta"
-            className="mt-3 block w-full text-center text-xs text-primary hover:underline"
-          >
-            Ver planos
+        ) : (
+          <Link to="/auth">
+            <Button variant="outline" size="sm" className="w-full gap-2">
+              <LogIn className="w-4 h-4" />
+              Entrar
+            </Button>
           </Link>
-        </div>
+        )}
       </div>
     </aside>
   );
