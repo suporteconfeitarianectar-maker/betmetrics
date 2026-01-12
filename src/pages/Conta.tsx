@@ -159,9 +159,22 @@ export default function Conta() {
                   <Button
                     variant={plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) ? 'outline' : plan.recommended ? 'default' : 'secondary'}
                     className="w-full"
-                    disabled={plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive)}
+                    disabled={plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) || plan.id === 'TRIAL'}
+                    onClick={() => {
+                      if (plan.id === 'PRO') {
+                        window.open('https://buy.stripe.com/cNi3cugWC04L6T37xZ3F600', '_blank');
+                      } else if (plan.id === 'ELITE') {
+                        window.open('https://buy.stripe.com/9B6cN47m22cTa5f3hJ3F601', '_blank');
+                      }
+                    }}
                   >
-                    {plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) ? 'Plano atual' : 'Upgrade'}
+                    {plan.id === currentPlan || (plan.id === 'TRIAL' && isTrialActive) 
+                      ? 'Plano atual' 
+                      : plan.id === 'PRO' 
+                        ? 'Assinar Pro' 
+                        : plan.id === 'ELITE' 
+                          ? 'Assinar Elite' 
+                          : 'Upgrade'}
                   </Button>
                 </div>
               </div>
