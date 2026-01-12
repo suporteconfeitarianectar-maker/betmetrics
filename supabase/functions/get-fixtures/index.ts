@@ -5,21 +5,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// API-Football v2 response structure
-interface APIv2Match {
-  match_id: string
-  match_date: string
-  match_time: string
-  match_hometeam_id: string
-  match_hometeam_name: string
-  match_awayteam_id: string
-  match_awayteam_name: string
-  league_id: string
-  league_name: string
-  country_name: string
-  league_logo: string
-  team_home_badge: string
-  team_away_badge: string
+// API-Football v3 response structure
+interface APIv3Fixture {
+  fixture: {
+    id: number
+    date: string
+    timestamp: number
+  }
+  league: {
+    id: number
+    name: string
+    country: string
+    logo: string
+  }
+  teams: {
+    home: {
+      id: number
+      name: string
+      logo: string
+    }
+    away: {
+      id: number
+      name: string
+      logo: string
+    }
+  }
+}
+
+interface APIv3Response {
+  response: APIv3Fixture[]
+  errors: Record<string, string> | string[]
+  results: number
 }
 
 Deno.serve(async (req) => {
@@ -69,22 +85,25 @@ Deno.serve(async (req) => {
     console.log(`Fetching fixtures for date: ${today}`)
     console.log(`API Key present: ${!!apiKey}, length: ${apiKey.length}`)
 
-    // API-Football v2 uses query parameter for API key and different endpoint
-    const apiUrl = `https://apiv2.apifootball.com/?action=get_events&from=${today}&to=${today}&APIkey=${apiKey}`
+    // API-Football v3 with header authentication
+    const apiUrl = `https://v3.football.api-sports.io/fixtures?date=${today}`
     
-    console.log(`Calling API URL: ${apiUrl.replace(apiKey, 'HIDDEN')}`)
+    console.log(`Calling API URL: ${apiUrl}`)
 
     const response = await fetch(apiUrl, {
       method: 'GET',
+      headers: {
+        'x-apisports-key': apiKey,
+      },
     })
 
     // Log response details for debugging
     const responseText = await response.text()
-    console.log(`API-Football response status: ${response.status}`)
-    console.log(`API-Football response body (first 500 chars): ${responseText.substring(0, 500)}`)
+    console.log(`API-Football v3 response status: ${response.status}`)
+    console.log(`API-Football v3 response body (first 500 chars): ${responseText.substring(0, 500)}`)
 
     if (!response.ok) {
-      console.error(`API-Football error: ${response.status} ${response.statusText}`)
+      console.error(`API-Football v3 error: ${response.status} ${response.statusText}`)
       console.error(`Response body: ${responseText}`)
       return new Response(
         JSON.stringify({ 
@@ -97,21 +116,9 @@ Deno.serve(async (req) => {
     }
 
     // Parse the response
-    let data: APIv2Match[]
+    let data: APIv3Response
     try {
-      const parsed = JSON.parse(responseText)
-      // API v2 returns array directly or error object
-      if (Array.isArray(parsed)) {
-        data = parsed
-      } else if (parsed.error) {
-        console.error('API-Football v2 error:', parsed.error)
-        return new Response(
-          JSON.stringify({ fixtures: [], date: today, message: parsed.error }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      } else {
-        data = []
-      }
+      data = JSON.parse(responseText)
     } catch (e) {
       console.error('Failed to parse API response:', e)
       return new Response(
@@ -120,26 +127,35 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check for API errors
+    if (data.errors && Object.keys(data.errors).length > 0) {
+      console.error('API-Football v3 errors:', data.errors)
+      return new Response(
+        JSON.stringify({ fixtures: [], date: today, message: 'API returned errors', errors: data.errors }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Transform to our format
-    const fixtures = data.map((match) => ({
-      id: parseInt(match.match_id),
-      date: `${match.match_date}T${match.match_time}:00`,
-      timestamp: new Date(`${match.match_date}T${match.match_time}:00`).getTime() / 1000,
+    const fixtures = data.response.map((item) => ({
+      id: item.fixture.id,
+      date: item.fixture.date,
+      timestamp: item.fixture.timestamp,
       league: {
-        id: parseInt(match.league_id),
-        name: match.league_name,
-        country: match.country_name,
-        logo: match.league_logo || '',
+        id: item.league.id,
+        name: item.league.name,
+        country: item.league.country,
+        logo: item.league.logo || '',
       },
       homeTeam: {
-        id: parseInt(match.match_hometeam_id),
-        name: match.match_hometeam_name,
-        logo: match.team_home_badge || '',
+        id: item.teams.home.id,
+        name: item.teams.home.name,
+        logo: item.teams.home.logo || '',
       },
       awayTeam: {
-        id: parseInt(match.match_awayteam_id),
-        name: match.match_awayteam_name,
-        logo: match.team_away_badge || '',
+        id: item.teams.away.id,
+        name: item.teams.away.name,
+        logo: item.teams.away.logo || '',
       },
     }))
 
