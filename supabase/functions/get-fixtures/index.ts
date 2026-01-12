@@ -30,7 +30,7 @@ const ALLOWED_LEAGUES: Record<number, { country: string; priority: number }> = {
   308: { country: 'Arábia Saudita', priority: 14 }, // King's Cup
   // Turquia
   203: { country: 'Turquia', priority: 15 },  // Süper Lig
-  206: { country: 'Turquia', priority: 16 },  // Turkish Cup
+  205: { country: 'Turquia', priority: 16 },  // Turkish Cup
 }
 
 const ALLOWED_LEAGUE_IDS = Object.keys(ALLOWED_LEAGUES).map(Number)
