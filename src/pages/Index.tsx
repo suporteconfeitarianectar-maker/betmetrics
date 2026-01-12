@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { DynamicSummaryCards } from '@/components/cards/DynamicSummaryCards';
-import { SimpleMatchCard, HomeAdvantageCard, CompactMatchCard } from '@/components/cards/SimpleMatchCard';
+import { MobileMatchCard, SimpleMatchCard, HomeAdvantageCard } from '@/components/cards/SimpleMatchCard';
 import { Button } from '@/components/ui/button';
 import { matches } from '@/data/mockData';
 import { Link } from 'react-router-dom';
@@ -16,141 +16,152 @@ export default function Index() {
   // Oportunidades com valor positivo
   const opportunityMatches = matches.filter((m) => m.evIndicator === 'positive');
   
-  // Top 5 melhores oportunidades (ordenadas por EV)
+  // Top 3 melhores oportunidades (ordenadas por EV)
   const topValueMatches = [...matches]
     .filter((m) => m.evIndicator === 'positive')
     .sort((a, b) => b.ev - a.ev)
-    .slice(0, 6);
+    .slice(0, 3);
 
   // Mandantes favoritos
   const homeAdvantageMatches = matches.filter((m) => m.isHomeAdvantage && m.evIndicator === 'positive');
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 space-y-6">
-        {/* Resumo do Usuário */}
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8">
+        
+        {/* Seção 1: Resumo do Usuário - Prioridade máxima no mobile */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-base font-semibold text-card-foreground">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-lg md:text-xl font-bold text-card-foreground">
               Seu resumo
             </h1>
             {user && (
               <Button
-                size="sm"
+                size="default"
                 onClick={() => setShowAddBet(true)}
-                className="gap-1 h-8"
+                className="gap-2 h-10 px-4 text-sm"
               >
                 <Plus className="w-4 h-4" />
-                Nova Aposta
+                <span className="hidden sm:inline">Nova Aposta</span>
+                <span className="sm:hidden">Apostar</span>
               </Button>
             )}
           </div>
           <DynamicSummaryCards />
         </section>
 
-        {/* Oportunidades do Dia - Horizontal scroll on mobile */}
+        {/* Seção 2: Oportunidades do Dia - Carousel no mobile (1 card por vez) */}
         <section>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-semibold text-card-foreground">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold text-card-foreground">
                 Oportunidades do dia
               </h2>
             </div>
             <Link to="/jogos">
-              <Button variant="ghost" size="sm" className="gap-1 text-primary text-xs h-7 px-2">
+              <Button variant="ghost" size="sm" className="gap-1 text-primary text-sm h-9 px-3">
                 Ver todas
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
 
-          {/* Mobile: horizontal scroll / Desktop: grid */}
+          {/* Mobile: Carousel com 1 card ocupando ~90% da tela */}
           <div className="md:hidden scroll-container">
-            {opportunityMatches.slice(0, 6).map((match) => (
-              <CompactMatchCard key={match.id} match={match} />
+            {opportunityMatches.slice(0, 4).map((match) => (
+              <MobileMatchCard key={match.id} match={match} />
             ))}
           </div>
           
-          <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {/* Desktop: Grid */}
+          <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
             {opportunityMatches.slice(0, 3).map((match) => (
               <SimpleMatchCard key={match.id} match={match} />
             ))}
           </div>
 
           {opportunityMatches.length > 3 && (
-            <p className="text-[11px] text-muted-foreground mt-2 text-center md:mt-3">
+            <p className="text-sm text-muted-foreground mt-4 text-center">
               +{opportunityMatches.length - 3} oportunidades disponíveis
             </p>
           )}
         </section>
 
-        {/* Jogos com Melhor Valor - Grid 2x2 on mobile */}
+        {/* Seção 3: Melhor Valor Hoje - Lista vertical no mobile */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-success" />
-            <h2 className="text-base font-semibold text-card-foreground">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-success" />
+            <h2 className="text-lg font-bold text-card-foreground">
               Melhor valor hoje
             </h2>
           </div>
 
-          <p className="text-[11px] text-muted-foreground mb-3">
+          <p className="text-sm text-muted-foreground mb-4">
             Curadoria automática do modelo
           </p>
 
-          {/* Mobile: 2 column grid / Desktop: 3 column grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
-            {topValueMatches.slice(0, 4).map((match) => (
-              <div key={match.id} className="md:hidden">
-                <Link 
-                  to={`/jogo/${match.id}`}
-                  className="card-compact block"
-                >
-                  <h3 className="font-medium text-card-foreground text-xs leading-tight mb-0.5 truncate">
-                    {match.homeTeam}
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground truncate mb-2">
-                    vs {match.awayTeam}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-success">Favorável</span>
-                    <span className="text-[10px] text-muted-foreground">{match.time}</span>
-                  </div>
-                </Link>
-              </div>
-            ))}
+          {/* Mobile: Lista vertical com cards full-width */}
+          <div className="md:hidden space-y-3">
             {topValueMatches.slice(0, 3).map((match) => (
-              <div key={`desktop-${match.id}`} className="hidden md:block">
-                <SimpleMatchCard match={match} />
-              </div>
+              <Link 
+                key={match.id}
+                to={`/jogo/${match.id}`}
+                className="card-mobile flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-card-foreground text-base truncate">
+                    {match.homeTeam} vs {match.awayTeam}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-muted-foreground">{match.league}</span>
+                    <span className="text-sm text-muted-foreground">•</span>
+                    <span className="text-sm text-muted-foreground">{match.time}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 ml-4">
+                  <span className="text-sm font-medium text-success bg-success/10 px-3 py-1 rounded-full">
+                    +{(match.ev * 100).toFixed(0)}%
+                  </span>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop: Grid */}
+          <div className="hidden md:grid md:grid-cols-3 gap-4">
+            {topValueMatches.map((match) => (
+              <SimpleMatchCard key={match.id} match={match} />
             ))}
           </div>
         </section>
 
-        {/* Mandantes Favoritos - Horizontal scroll on mobile */}
+        {/* Seção 4: Mandantes Favoritos - Carousel no mobile */}
         {homeAdvantageMatches.length > 0 && (
           <section>
-            <div className="flex items-center gap-2 mb-2">
-              <Home className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-semibold text-card-foreground">
+            <div className="flex items-center gap-2 mb-4">
+              <Home className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold text-card-foreground">
                 Mandantes favoritos
               </h2>
             </div>
 
-            <p className="text-[11px] text-muted-foreground mb-3">
+            <p className="text-sm text-muted-foreground mb-4">
               Vantagem estatística do time da casa
             </p>
 
-            {/* Mobile: horizontal scroll / Desktop: grid */}
+            {/* Mobile: Carousel */}
             <div className="md:hidden scroll-container">
-              {homeAdvantageMatches.slice(0, 6).map((match) => (
-                <div key={match.id} className="scroll-item w-[140px]">
+              {homeAdvantageMatches.slice(0, 4).map((match) => (
+                <div key={match.id} className="scroll-item">
                   <HomeAdvantageCard match={match} />
                 </div>
               ))}
             </div>
 
-            <div className="hidden md:grid md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {/* Desktop: Grid */}
+            <div className="hidden md:grid md:grid-cols-3 xl:grid-cols-4 gap-4">
               {homeAdvantageMatches.slice(0, 4).map((match) => (
                 <HomeAdvantageCard key={match.id} match={match} />
               ))}
@@ -159,8 +170,8 @@ export default function Index() {
         )}
 
         {/* Disclaimer */}
-        <section className="text-center py-4 border-t border-border/50">
-          <p className="text-[10px] text-muted-foreground">
+        <section className="text-center py-6 border-t border-border/50">
+          <p className="text-sm text-muted-foreground">
             BetMetrics: decisões baseadas em dados, não em palpites.
           </p>
         </section>

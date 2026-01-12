@@ -86,11 +86,42 @@
 
   html {
     @apply scroll-smooth;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    /* Mobile-first base font size */
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Mobile typography - minimum sizes */
+  @media (max-width: 768px) {
+    body {
+      font-size: 16px;
+    }
+    
+    h1 {
+      @apply text-xl font-bold;
+    }
+    
+    h2 {
+      @apply text-lg font-semibold;
+    }
+    
+    h3 {
+      @apply text-base font-semibold;
+    }
+    
+    p, span, label {
+      @apply text-sm;
+    }
   }
 
   /* Custom scrollbar */
@@ -113,18 +144,34 @@
 }
 
 @layer components {
+  /* Card styles - mobile first */
   .card-metric {
-    @apply bg-card border border-border/60 rounded-lg p-3 transition-all duration-200;
+    @apply bg-card border border-border/60 rounded-xl p-4 transition-all duration-200;
     box-shadow: var(--shadow-sm);
+  }
+
+  @media (min-width: 768px) {
+    .card-metric {
+      @apply p-4;
+    }
   }
 
   .card-metric:hover {
     @apply border-border bg-accent/30;
   }
 
-  /* Compact card for mobile grids */
+  /* Mobile-optimized card - takes full width */
+  .card-mobile {
+    @apply bg-card border border-border/50 rounded-xl p-4 transition-all duration-150 w-full;
+  }
+
+  .card-mobile:hover {
+    @apply bg-accent/20;
+  }
+
+  /* Compact card for carousels - shows ~1.1 cards */
   .card-compact {
-    @apply bg-card border border-border/50 rounded-lg p-3 transition-all duration-150;
+    @apply bg-card border border-border/50 rounded-xl p-4 transition-all duration-150;
   }
 
   .card-compact:hover {
@@ -161,11 +208,14 @@
 
   .data-mono {
     font-family: 'JetBrains Mono', monospace;
-    @apply tabular-nums text-sm;
+    @apply tabular-nums text-base;
   }
 
+  /* Mobile-optimized navigation */
   .nav-item {
-    @apply flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-muted-foreground transition-colors;
+    @apply flex flex-col items-center justify-center gap-1 px-4 py-3 text-muted-foreground transition-colors;
+    min-height: 56px; /* Touch-friendly height */
+    min-width: 64px;
   }
 
   .nav-item.active {
@@ -180,19 +230,46 @@
     @apply bg-card/90 backdrop-blur-lg;
   }
 
-  /* Horizontal scroll container for mobile */
+  /* Mobile carousel - shows 1 card + peek at next */
   .scroll-container {
-    @apply flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory;
+    @apply flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    scroll-padding-left: 1rem;
   }
 
   .scroll-container::-webkit-scrollbar {
     display: none;
   }
 
+  /* Carousel item - takes ~90% of screen width on mobile */
   .scroll-item {
     @apply flex-shrink-0 snap-start;
+    width: calc(90vw - 2rem); /* 90% of viewport minus padding */
+    max-width: 320px;
+  }
+
+  @media (min-width: 768px) {
+    .scroll-item {
+      width: auto;
+      max-width: none;
+    }
+  }
+
+  /* Touch-friendly buttons */
+  .btn-touch {
+    @apply min-h-[48px] px-6;
+  }
+
+  /* Section spacing for mobile */
+  .section-mobile {
+    @apply space-y-4 py-2;
+  }
+
+  @media (min-width: 768px) {
+    .section-mobile {
+      @apply space-y-6 py-4;
+    }
   }
 }
 
@@ -208,5 +285,34 @@
 
   .glow-success {
     box-shadow: var(--shadow-glow-success);
+  }
+
+  /* Mobile utilities */
+  .mobile-full-width {
+    @apply w-full;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-full-width {
+      width: calc(100% + 2rem);
+      margin-left: -1rem;
+      margin-right: -1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* Touch-friendly spacing */
+  .touch-spacing {
+    @apply py-3 px-4;
+  }
+
+  /* Safe area padding for notched phones */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 }
